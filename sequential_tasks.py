@@ -74,9 +74,8 @@ def generate_match_screen(window, params, trial_info):
     
     # define match image   
     if params['match_screen_type'] == 'single': 
-        """
-        makes this a sequential same-different task
-        """ 
+        
+        ######## makes this a sequential same-different task
         
         # randomly determine whether this will be a same or different trial (and save this value)
         trial_answer = ['different', 'same'] [ 1 * (np.random.random() > params['proportion_same'])]
@@ -97,7 +96,8 @@ def generate_match_screen(window, params, trial_info):
         trial_info['match_viewpoint'] = get_viewpoint(match_screen_image) 
     
     elif params['match_screen_type'] == 'double': 
-        """makes this a sequential match-to-sample task"""
+        
+        ######### makes this a sequential match-to-sample task
         
         # determine whether the correct answer is going to be on the left or right 
         trial_answer = ['left', 'right'] [ 1 * (np.random.random()>.5)] 
@@ -328,6 +328,27 @@ def image_order_protocol(params):
         
     return images
 
+def eyetracker_protocols(i_protocol, params): 
+    """need to define all the eye-tracking protocols for eyelink + tobii"""
+    
+    if i_protocol == 'calibration': 
+        # initial calibration in experiment
+        pass 
+
+    elif i_protocol == 'recalibration': 
+        # recalibrate when necessary throughout experiment
+        pass
+    
+    elif i_protocol == 'validate': 
+        # make sure we're still calibrated at the beginning of each trial
+        pass 
+    
+    elif i_protocol == 'log_info': 
+        # pass information to itracker 
+        pass 
+
+    return None 
+
 if __name__ == '__main__': 
     
     params = {
@@ -352,7 +373,7 @@ if __name__ == '__main__':
         # backwards mask over image 
         'use_mask': True, 
         # time to mask in seconds 
-        'masktime': .01,
+        'masktime': .02,
         # feedback after each trial
         'feedback': True, 
         # color of wrong trials feedback
@@ -377,17 +398,18 @@ if __name__ == '__main__':
     images = image_order_protocol(params) 
     
     # create dataframe for all trials in experiment 
-    data = pandas.DataFrame({}) 
+    experiment_data = pandas.DataFrame({}) 
     
+    eyetracker = eyetracking_protocols('calibrate', params) 
     # iterate across all images/objects
     for i_image in images: 
         
-        # create a collect data from a single trial 
-        data = data.append(generate_trial(experiment_window, i_image, params), ignore_index=True) 
-    
+        # create single trial, evaluate performance, return trial data 
+        trial_data = generate_trial(experiment_window, i_image, params)
+        # aggregate data across trials 
+        experiment_data = experiment_data.append(trial_data, ignore_index=True) 
         # for each trial, save cumulative data collected within experiment 
-        data.to_csv('%s.csv'%subject_id)  
-        
+        experiment_data.to_csv('%s.csv'%subject_id)  
         # print to terminal 
         if params['verbose']: print('...data saved for %s'%subject_id)
     
