@@ -361,15 +361,15 @@ if __name__ == '__main__':
         # show sample for ... 'self_paced' 'variable' 'fixed'
         'sample_observationtime': 'fixed',  
         # time on sample screen if false—list w 1|2 numbers 
-        'sampletime': [.5, 1] , 
+        'sampletime': [.2, 1] , 
         # entering into fullscreen 
         'fullscreen': True, 
         # ratio of same/different 
         'proportion_same': .5, 
         # experiment type: 2|1 ('double'|'single') images on match screen
-        'match_screen_type': 'double',
-        # path to images
-        'image_directory': '/Users/biota/working/perirhinal_function/stimuli/images/rotation1', 
+        'match_screen_type': 'single',
+        # absolute path to images, which should be in this directory
+        'image_directory': os.path.join(os.getcwd(),'images'),  
         # backwards mask over image 
         'use_mask': True, 
         # time to mask in seconds 
@@ -400,7 +400,9 @@ if __name__ == '__main__':
     # create dataframe for all trials in experiment 
     experiment_data = pandas.DataFrame({}) 
     
-    eyetracker = eyetracking_protocols('calibrate', params) 
+    ####### eyetracker = eyetracking_protocols('calibrate', params) 
+
+
     # iterate across all images/objects
     for i_image in images: 
         
