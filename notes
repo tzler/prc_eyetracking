@@ -1,0 +1,76 @@
+TOBII 
+
+- libscreen is used to create all the presentation displays instead of psychopy.window  
+    blank_screen = libscreen.Screen(disptype='psychopy')
+    blank_text = visual.TextStim(win=pygaze.expdisplay, text=" ")
+- pygaze.expdisplay is used instead of all of psychopy.window but psychopy.visual is still the base library that's handling everything
+- single strings are logged whenever, e.g.
+    self.tracker.log('some string')
+- pygaze handles the data saving, e.g.
+    https://github.com/ShawnTylerSchwartz/closed-loop-intervention/blob/main/task.py#L532
+- calibration is a single line of code
+    tracker.calibrate(calibrate=calibrate, validate=validate)
+- what's the difference between a status_msg and a log? e.g.
+    tracker.status_msg("beginning_of_experiment")
+    tracker.log("sub_%s_start_%s_experiment" % (self.experiment_info['Subject Number'], self.experiment_name))
+
+FROM SHAWN
+
+- useful code
+  - https://github.com/ShawnTylerSchwartz/closed-loop-intervention/blob/main/task.py
+  - https://github.com/ShawnTylerSchwartz/eye-fixation-validator
+    
+- instead of window.flip() and window.draw(): 
+
+    def blank(self, duration):
+      blank_screen = libscreen.Screen(disptype='psychopy')
+      blank_text = visual.TextStim(win=pygaze.expdisplay, text=" ")
+      blank_screen.screen.append(blank_text)
+      self.experiment_window.fill(screen=blank_screen) # fill is like draw
+      self.experiment_window.show() # the equivalent of flip
+      core.wait(duration)
+
+- macs (with retina displays) double the actual pixel values. need to correct (e.g. 1/2) for this
+
+- current defaults
+    - right click (show package resources)
+    - need SOME version to import
+  - one possibility: import shawns pygaze (psychopy's OG pygasze doesn't work)
+    - where do you specify defaults (put in right click --> in python 3.6)
+      - currently in root of pygaze folder
+        - defaults_original.py
+        - shawns defaults are currently in defaults.py (in his
+        - which is what they're drawing from in libscreen.Screen(disptype='psychopy')
+  - can be changed: pygaze/_eyetracker/libtobii
+
+EYELINK
+- nice tutorial: https://www.youtube.com/watch?v=1tLJHVktrEk
+
+install/setup steps 
+
+# created psychopy environment from environment.yml 
+$ conda env create -f ~/gru/psychopy_experiments/prc-relevant_eyetracking/environment.yml 
+
+# activated environment 
+$ conda activate psychopy 
+
+# moved over pylink functions into psychopy folder--which i think akshay installed with the developers kit
+$ cp -rf /Applications/Eyelink/SampleExperiments/Python ~/gru/psychopy_experiments/eyelink_integration/
+
+# installed pylink in psycopy environment 
+$ python ~/gru/psychopy_experiments/install_pylink.py
+
+# turning on the eye tracker (circular button!) and the eyelink PC, they running a simple demo experiment 
+$ python ~/gru/psychopy_experiments/eyelink_integration/examples/Psychopy_examples/picture/picture.py
+
+# NOTES ON KEYBOARD INTERFACE ON THE PARTICIPANT SIDE
+# ENTER: turns on the video of the eyetracker
+# LEFT/RIGHT: toggles which viewof the eye you have while in camera mode 
+# c: calibrates eyetracker
+# v: validates calibration
+# o: starts the experiment
+# after calibration, in order to start the experiment, you have to go back into the camera mode before pressing 'o' 
+# to present any of the experiments on the correct monitor use screen=1 e.g.  
+# window = psychopy.window(.... screen=1) 
+#### i THINK that the link_events.py script is going to have everything we need to stream data from the eyelink to the bowman in real time
+

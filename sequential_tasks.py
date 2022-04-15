@@ -1,4 +1,4 @@
-from psychopy import core, visual, event
+from psychopy import core, visual, event, monitors
 from datetime import datetime
 import os, sys, pandas, numpy as np
 
@@ -392,7 +392,7 @@ if __name__ == '__main__':
     subject_id = generate_subject_id(os.getcwd()) 
    
     # create the 'window' used to present stimuli throughout the experiment 
-    experiment_window = visual.Window(fullscr=params['fullscreen'], monitor="testMonitor")
+    experiment_window = visual.Window(fullscr=params['fullscreen'], monitor="testMonitor", screen=1)
     
     # determine how sample images will be ordered
     images = image_order_protocol(params) 
@@ -401,7 +401,6 @@ if __name__ == '__main__':
     experiment_data = pandas.DataFrame({}) 
     
     ####### eyetracker = eyetracking_protocols('calibrate', params) 
-
 
     # iterate across all images/objects
     for i_image in images: 
