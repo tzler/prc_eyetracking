@@ -385,9 +385,28 @@ if __name__ == '__main__':
         # time to wait when right
         'righttime':.5,
         # print out data from the terminal 
-        'verbose': True, 
-        }
+		'verbose': True,
+	
+######## eyelink integration params
+        'use_retina': False, 
+        'dummy_mode': False, 
+		 
+		}
     
+    import eyelink_functions 
+
+    # Switch to the script folder
+    script_path = os.path.dirname(sys.argv[0])
+    if len(script_path) != 0:
+        os.chdir(script_path)
+
+    params = eyelink_functions.setup_edf_file(params)
+
+    el_tracker = eyelink_functions.connect_to_eyelink(params)
+
+
+###########
+
     # generate a subject id we can use to save data from this experiment
     subject_id = generate_subject_id(os.getcwd()) 
    
