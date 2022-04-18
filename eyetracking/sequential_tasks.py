@@ -290,7 +290,6 @@ def generate_trial(window, sample_image, params):
     
     return trial_info 
 
-
 def generate_subject_id(path_to_data, subject_id=None): 
     """generate id used to save data — build it out after talking with Akshay"""
     
@@ -349,6 +348,29 @@ def eyetracker_protocols(i_protocol, params):
 
     return None 
 
+
+def setup_camera_and_calibrate(el_tracker, params): 
+
+    # Step 5: Set up the camera and calibrate the tracker
+
+    # Show the task instructions
+    task_msg = 'In the task, you may press the SPACEBAR to end a trial\n' + \
+        '\nPress Ctrl-C to if you need to quit the task early\n'
+    if params['dummy_mode']:
+        task_msg = task_msg + '\nNow, press ENTER to start the task'
+    else:
+        task_msg = task_msg + '\nNow, press ENTER twice to calibrate tracker'
+    show_msg(win, task_msg)
+
+    # skip this step if running the script in Dummy Mode
+    if not params['dummy_mode']:
+        try:
+            el_tracker.doTrackerSetup()
+        except RuntimeError as err:
+            print('ERROR:', err)
+            el_tracker.exitCalibration()
+
+
 if __name__ == '__main__': 
     
     params = {
@@ -403,6 +425,12 @@ if __name__ == '__main__':
     params = eyelink_functions.setup_edf_file(params)
 
     el_tracker = eyelink_functions.connect_to_eyelink(params)
+	
+    params = open_edf_file(params) 
+	
+    configure_tracker(params) 
+
+    setup_camera_and_calibrate(el_tracker, params) 
 
 
 ###########
@@ -413,6 +441,9 @@ if __name__ == '__main__':
     # create the 'window' used to present stimuli throughout the experiment 
     experiment_window = visual.Window(fullscr=params['fullscreen'], monitor="testMonitor", screen=1)
     
+    # determine screen width and height 	
+    params['screen_width'], params['screen_height'] = experiment_window.size
+ 
     # determine how sample images will be ordered
     images = image_order_protocol(params) 
     
