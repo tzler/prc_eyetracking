@@ -240,7 +240,7 @@ def setup_graphics_environment_for_calibration(el_tracker, params): #use_retina=
 	background_color = win.color
 	genv.setCalibrationColors(foreground_color, background_color)
 	
-	params['scn_width'], params['scn_height'] = scn_width, scn_height	
+	params['screen_width'], params['screen_height'] = scn_width, scn_height	
 	
 	return win, genv, params
 
@@ -296,7 +296,7 @@ def show_msg(params, win, genv, text, wait_for_keypress=True):
     """ Show task instructions on screen"""
     msg = visual.TextStim(win, text,
                           color=genv.getForegroundColor(),
-                          wrapWidth=params['scn_width']/2)
+                          wrapWidth=params['screen_width']/2)
     clear_screen(win, genv)
     msg.draw()
     win.flip()
@@ -384,8 +384,8 @@ def run_trial(trial_pars, trial_index, win, params):
 	trial_index - record the order of trial presentation in the task
 	"""
 	
-	scn_width = params['scn_width'] 
-	scn_height = params['scn_height'] 
+	scn_width = params['screen_width'] 
+	scn_height = params['screen_height'] 
 	
 	# unpacking the trial parameters
 	cond, pic = trial_pars

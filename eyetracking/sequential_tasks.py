@@ -103,7 +103,7 @@ def setup_match_screen(window, params, trial_info):
         # determine whether the correct answer is going to be on the left or right 
         trial_answer = ['left', 'right'] [ 1 * (np.random.random()>.5)] 
         # decide how much to shift each image by (here, i think .5 = half the distance from 0,0 to the edge
-        shift = [-.5, .5] 
+        shift = [ -(params['screen_width']/5) , params['screen_width']/5] 
         # determine the path to the same and different images 
         match_image_path = os.path.join(params['image_directory'], matches['same'])
         diff_image_path =  os.path.join(params['image_directory'], matches['different'])
@@ -187,7 +187,6 @@ def pre_trial_setup(window, genv, params):
 
 def sample_screen_protocol(window, el_tracker, params, trial_info): 
    
-    
     # set the path to trial image  
     sample_image_path = os.path.join(params['image_directory'], trial_info['sample_image'])
     # define sample image
@@ -202,14 +201,24 @@ def sample_screen_protocol(window, el_tracker, params, trial_info):
     # time image presentation 
     stimulus_time = core.Clock()
 
+    time_stamp = [] 
+    gaze_current = [] 
+
     # record eye movements during stimulus presentation     
     if params['sample_observationtime'] == 'self_paced': 
-        
-        # wait for responce before moving on
-        keyboard_response = event.waitKeys()[0]
-        # allow participants to exit experiments at the end of each trial 
-        if keyboard_response in params['escape_keys']: core.quit()
- 
+		
+        key_press = False
+        while not key_press: 
+                   
+            # wait for responce before moving on
+            keyboard_response = event.waitKeys()[0]
+            
+            # allow participants to exit experiments at the end of each trial 
+            if keyboard_response in params['escape_keys']: 
+                core.quit()
+ 		    
+            # move on 	
+            kep_press = True 
     else: 
 
         if params['sample_observationtime'] == 'variable': 
@@ -224,7 +233,9 @@ def sample_screen_protocol(window, el_tracker, params, trial_info):
 	
     # measure actual time required for all observation types 
     trial_info['stimulus_presentation_time'] = stimulus_time.getTime()
-    
+    trial_info['gaze_positions'] = gaze_current 
+    trial_info['time_stamp'] = time_stamp    
+
     # stop eye tracker 
     stop_gaze_recording(el_tracker) 
    
@@ -261,27 +272,61 @@ def match_screen_protocol(window, el_tracker, params, trial_info):
     window.flip()
     # start recording response time info 
     response_timeinfo = core.Clock()
+    
     # wait for keyboard responses for allowed keys
     trial_response = None
-    
+   
+    eye_used = el_tracker.eyeAvailable() 
+    gaze_pos = (None, None) 
+    gaze_x = [] 
+    gaze_y = [] 
+    time_i = [] 
+
     while trial_response == None: 
-    
+
+        current_sample = el_tracker.getNewestSample() 
+        #dt = el_tracker.getNewestSample()
+        if current_sample is None:  # no sample data
+            gaze_pos = (None, None)
+        else:
+            if eye_used == 1 and current_sample.isRightSample():
+                print('IS RIGHT')
+                gaze_pos = current_sample.getRightEye().getGaze()
+            elif eye_used == 0 and current_sample.isLeftSample():
+                print('IS LEFT') 
+                gaze_pos = current_sample.getLeftEye().getGaze()
+			
+            print( gaze_pos ) 
+            # update the window position and redraw the screen
+            gaze_window_pos = (int(gaze_pos[0]-params['screen_width']/2.0),
+                               int(params['screen_height'] /2.0-gaze_pos[1]))
+
+            gaze_x.append( int( gaze_window_pos[0] ))
+            gaze_y.append( int( gaze_window_pos[1] )) 
+            time_i.append( response_timeinfo.getTime() )
+            print( type( gaze_pos[0] ) )
+  			
         # wait for response 
-        keyboard_response = event.waitKeys()[0] 
-       
-        if keyboard_response in trial_info['keyboard_map']:
+        keyboard_response = event.getKeys() 
+        if len(keyboard_response): 
+            if keyboard_response[0] in trial_info['keyboard_map']:
             
-            # convert keyboard response into experimental decision 
-            participant_decision = trial_info['keyboard_map'][keyboard_response] 
-            # determine whether the participant was correct/incorrect
-            trial_response = 1 * (trial_info['answer'] == participant_decision )
-            # give feedback when specified  
-            feedback_protocol(window, params, trial_response) 
+                # convert keyboard response into experimental decision 
+                participant_decision = trial_info['keyboard_map'][keyboard_response[0]] 
+                # determine whether the participant was correct/incorrect
+                trial_response = 1 * (trial_info['answer'] == participant_decision )
+                # give feedback when specified  
+                feedback_protocol(window, params, trial_response) 
         
-        # allow participants to exit experiments at the end of each trial 
-        elif keyboard_response in ['q', 'escape']: 
-            core.quit()
-    
+            # allow participants to exit experiments at the end of each trial 
+            elif keyboard_response[0] in ['q', 'escape']: 
+                core.quit()
+   
+    trial_info['gaze_x'] = gaze_x 
+    trial_info['gaze_y'] = gaze_y 
+    trial_info['time_i'] = time_i
+
+
     # save decision 
     trial_info['participant_decision'] = participant_decision
     # save correct/incorrect 
@@ -318,8 +363,8 @@ def run_single_trial(window, genv, sample_image, params):
 
 def eyetracker_setup_for_trial(win, genv, params): 
 
-    scn_width = params['scn_width']
-    scn_height = params['scn_height']
+    scn_width = params['screen_width']
+    scn_height = params['screen_height']
 
     # get a reference to the currently active EyeLink connection
     el_tracker = pylink.getEYELINK()
@@ -515,7 +560,7 @@ if __name__ == '__main__':
         # ratio of same/different 
         'proportion_same': .5, 
         # experiment type: 2|1 ('double'|'single') images on match screen
-        'match_screen_type': 'single',
+        'match_screen_type': 'double',
         # absolute path to images, which should be in this directory
         'image_directory': os.path.join(os.getcwd(),'images'),  
         # backwards mask over image 
@@ -555,7 +600,7 @@ if __name__ == '__main__':
     experiment_data = pandas.DataFrame({}) 
     
     # iterate across all images/objects
-    for i_image in images[:3]: 
+    for i_image in images[:2]: 
  
         # create single trial, evaluate performance, return trial data 
         trial_data = run_single_trial(experiment_window, genv, i_image, params)
