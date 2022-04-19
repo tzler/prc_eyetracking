@@ -90,7 +90,7 @@ def setup_match_screen(window, params, trial_info):
         match_stimulus.draw()
         
         # save information into trialdata for later analysis
-        trial_info['keyboard_map'] = {'0':'different', '1':'same'}
+        trial_info['keyboard_map'] = params['keyboard_map'] #{'0':'different', '1':'same'}
         trial_info['answer'] = trial_answer 
         trial_info['match_image'] = match_screen_image
         trial_info['match_identity'] = get_identity(match_screen_image) 
@@ -117,7 +117,7 @@ def setup_match_screen(window, params, trial_info):
         diff_stimulus.draw()
         
         # save infomation into trial data for later analysis
-        trial_info['keyboard_map'] = {'1': 'left', '0': 'right'} 
+        trial_info['keyboard_map'] = params['keyboard_map'] # {'1': 'left', '0': 'right'} 
         trial_info['matchscreen_same'] = matches['same'] 
         trial_info['answer'] = trial_answer 
         trial_info['matchscreen_same_identity'] = get_identity(matches['same'] ) 
@@ -185,68 +185,31 @@ def pre_trial_setup(window, genv, params):
 
     return el_tracker
 
-def sample_screen_protocol(window, el_tracker, params, trial_info): 
-   
+def sample_screen_protocol(window, genv, el_tracker, params, trial_info): 
+    """ present stimulus, collect gaze+keyboard behavior, mask image"""  
+ 
     # set the path to trial image  
     sample_image_path = os.path.join(params['image_directory'], trial_info['sample_image'])
+    
     # define sample image
     sample_stimulus = visual.ImageStim(window, image=sample_image_path)
+    
     # project sample image on the back-screen 
     sample_stimulus.draw()
-    
-	# start gaze recording 
-    el_tracker = start_gaze_recording(el_tracker) 
-    # make the back-screen the front-screen  
+    # display stimulus on front screen
     window.flip() 
-    # time image presentation 
-    stimulus_time = core.Clock()
-
-    time_stamp = [] 
-    gaze_current = [] 
-
-    # record eye movements during stimulus presentation     
-    if params['sample_observationtime'] == 'self_paced': 
-		
-        key_press = False
-        while not key_press: 
-                   
-            # wait for responce before moving on
-            keyboard_response = event.waitKeys()[0]
-            
-            # allow participants to exit experiments at the end of each trial 
-            if keyboard_response in params['escape_keys']: 
-                core.quit()
- 		    
-            # move on 	
-            kep_press = True 
-    else: 
-
-        if params['sample_observationtime'] == 'variable': 
-            # determine random presentation time between given intervals 
-            i_time = np.random.uniform(params['sampletime'][0], params['sampletime'][1])
-        elif params['sample_observationtime'] == 'fixed': 
-            # extract given timing for all trials 
-            i_time = params['sampletime'][0] 
-
-        # wait for alotted time
-        while stimulus_time.getTime() < i_time: pass 
-	
-    # measure actual time required for all observation types 
-    trial_info['stimulus_presentation_time'] = stimulus_time.getTime()
-    trial_info['gaze_positions'] = gaze_current 
-    trial_info['time_stamp'] = time_stamp    
-
-    # stop eye tracker 
-    stop_gaze_recording(el_tracker) 
-   
-    ##### masking protocol
+ 
+    # collect gaze and keyboard behavior 
+    trial_info = collect_behavior(window, genv, el_tracker, params, trial_info, 'sample') 
+    
+    # masking protocol
     if params['use_mask']: 
         generate_mask(window, sample_image_path, params['masktime']) 
     
     return trial_info 
 
 def feedback_protocol(window, params, response):
-    
+    """doesnt end trial, but replaces image with feedback (correct/incorrect)"""
     if params['feedback']: 
         # determine color of trial feedback 
         feedback_color = [params['wrong_rgb'], params['right_rgb']][  response ] 
@@ -261,83 +224,133 @@ def feedback_protocol(window, params, response):
         # wait for given amount of time, depending on correct/incorrect
         core.wait([params['wrongtime'], params['righttime']][response])
 
-def match_screen_protocol(window, el_tracker, params, trial_info): 
+def collect_behavior(window, genv, el_tracker, params, trial_info, screen): 
 
-    # setup--don't show yet--match screen in preparation for data collection  
-    window, trial_info = setup_match_screen(window, params, trial_info) 
- 
-    # start gaze recording
-    el_tracker = start_gaze_recording(el_tracker) 
-    # show the match screen which is prepped 
-    window.flip()
-    # start recording response time info 
-    response_timeinfo = core.Clock()
-    
-    # wait for keyboard responses for allowed keys
-    trial_response = None
-   
-    eye_used = el_tracker.eyeAvailable() 
     gaze_pos = (None, None) 
     gaze_x = [] 
     gaze_y = [] 
     time_i = [] 
 
-    while trial_response == None: 
+    # determine how much time to allow for this trial
+    if params['sample_timing'] == 'self_paced' or screen=='match':
+        # for self paced sample screen + match screen trials allow ten seconds 
+        time_alotted = params['self_paced_timeout'] 
+    elif params['sample_timing']=='variable' and screen=='sample': 
+        # determine random presentation time between given intervals 
+        time_alotted = np.random.uniform(params['sampletime'][0], params['sampletime'][1])
+    elif params['sample_timing'] == 'fixed' and screen=='sample': 
+        # extract given timing for all trials 
+        time_alotted = params['sampletime'][0] 
+ 
+    # make the back-screen the front-screen  
+    ############## if screen=='match': window.flip() #################### check if this is right  
+    # time image presentation 
+    stimulus_time = core.Clock()
+    # initialize keyboard result variable  
+    trial_info['%s_response'%screen] = None
 
+    # start gaze recording 
+    el_tracker = start_gaze_recording(el_tracker) 
+    # determine which eye the tracker is using  
+    eye_used = el_tracker.eyeAvailable() 
+
+    while trial_info['%s_response'%screen] == None: 
+        
+        # first, let's stream data from the eyetracker
         current_sample = el_tracker.getNewestSample() 
-        #dt = el_tracker.getNewestSample()
+
+        # figure out how to deal with these... 
         if current_sample is None:  # no sample data
             gaze_pos = (None, None)
         else:
             if eye_used == 1 and current_sample.isRightSample():
-                print('IS RIGHT')
                 gaze_pos = current_sample.getRightEye().getGaze()
             elif eye_used == 0 and current_sample.isLeftSample():
-                print('IS LEFT') 
                 gaze_pos = current_sample.getLeftEye().getGaze()
 			
-            print( gaze_pos ) 
-            # update the window position and redraw the screen
-            gaze_window_pos = (int(gaze_pos[0]-params['screen_width']/2.0),
-                               int(params['screen_height'] /2.0-gaze_pos[1]))
-
-            gaze_x.append( int( gaze_window_pos[0] ))
-            gaze_y.append( int( gaze_window_pos[1] )) 
-            time_i.append( response_timeinfo.getTime() )
-            print( type( gaze_pos[0] ) )
-  			
-        # wait for response 
-        keyboard_response = event.getKeys() 
-        if len(keyboard_response): 
-            if keyboard_response[0] in trial_info['keyboard_map']:
+            # convert gaze information into screen's coordinate frame
+            gaze_x.append( gaze_pos[0] - params['screen_width'] / 2.0 ) 
+            gaze_y.append( params['screen_height']/ 2.0 - gaze_pos[1] )
+            time_i.append( stimulus_time.getTime() )
             
-                # convert keyboard response into experimental decision 
-                participant_decision = trial_info['keyboard_map'][keyboard_response[0]] 
-                # determine whether the participant was correct/incorrect
-                trial_response = 1 * (trial_info['answer'] == participant_decision )
-                # give feedback when specified  
-                feedback_protocol(window, params, trial_response) 
+            if params['verbose']: print( gaze_x[-1] ) 
+  			
+        # now, let's deal with the keyboard responses 
+        keyboard_response = event.getKeys() 
         
-            # allow participants to exit experiments at the end of each trial 
-            elif keyboard_response[0] in ['q', 'escape']: 
-                core.quit()
+        # check for responses only on the match screens unless it's self paced 
+        if screen=='match' or params['sample_timing']=='self_paced':  
+
+            # whenever there's a keyboard press 
+            if len(keyboard_response): 
+
+                # manage participant decisions for match screens
+                if keyboard_response[0] in params['keyboard_map'] and screen=='match':
+                
+                    # convert keyboard response into experimental decision 
+                    trial_info['participant_decision'] = params['keyboard_map'][keyboard_response[0]] 
+                    # determine whether the participant was correct/incorrect
+                    trial_info['correct'] = 1 * (trial_info['answer'] == trial_info['participant_decision'] )
+                    # recognize response and exit loop 
+                    trial_info['%s_response'%screen] = True
+                    # stop recording gaze behaviors 
+                    stop_gaze_recording(el_tracker)                     
+                    # give feedback when specified  
+                    if screen=='match': feedback_protocol(window, params, trial_info['correct']) 
+           		
+                # manage participant responses for sample screens, when self paced 
+                if keyboard_response[0] == params['proceed_key'] and screen=='sample': 
+
+                    # register response to move on               
+                    trial_info['%s_response'%screen] = True
+                    # stop recording gaze behaviors 
+                    stop_gaze_recording(el_tracker)                     
+
+                # allow participants to exit experiments at the end of each trial 
+                elif keyboard_response[0] in ['q', 'escape']:
+                    # begin termination protocols 
+                    eyelink_functions.terminate_task(experiment_window, genv, params) 
+                    # close experiment window 
+                    experiment_window.close()
+                    # close psychopy 
+                    core.quit()
    
-    trial_info['gaze_x'] = gaze_x 
-    trial_info['gaze_y'] = gaze_y 
-    trial_info['time_i'] = time_i
+        # break out of while loop if we're over time 
+        if stimulus_time.getTime() > time_alotted:
+            if screen=='match' and trial_info['%s_response'%screen] == None: 
+                # mark lack of response  
+                trial_info['participant_decision'] = None
+                # mark incorrect 
+                trial_info['correct'] = 0
+                # give feedback
+                feedback_protocol(window, params, trial_info['correct']) 
 
-
-    # save decision 
-    trial_info['participant_decision'] = participant_decision
-    # save correct/incorrect 
-    trial_info['correct'] = trial_response
-    # save rt 
-    trial_info['reaction_time'] = response_timeinfo.getTime() 
+            break   
     
-    # clear the buffer of everything 
+    # stop eye tracker 
+    stop_gaze_recording(el_tracker) 
+    # clear out the memory buffer 
     event.clearEvents()
-    stop_gaze_recording(el_tracker)     
-    
+
+    # measure actual time required for all observation types 
+    trial_info['%sscreen_time'%screen] = stimulus_time.getTime()
+    trial_info['%sscreen_gazex'%screen] = gaze_x 
+    trial_info['%sscreen_gazey'%screen] = gaze_y 
+    trial_info['%sscreen_timei'%screen] = time_i
+
+    return trial_info
+
+def match_screen_protocol(window, genv, el_tracker, params, trial_info): 
+
+    # setup--don't show yet--match screen in preparation for data collection  
+    window, trial_info = setup_match_screen(window, params, trial_info) 
+ 
+    # show the match screen which is prepped 
+    window.flip()
+   
+    # collect gaze and keyboard behavioral data
+    trial_info = collect_behavior(window, genv, el_tracker, params, trial_info, 'match')
+   
     return trial_info 
 
 def run_single_trial(window, genv, sample_image, params): 
@@ -349,10 +362,10 @@ def run_single_trial(window, genv, sample_image, params):
     el_tracker = pre_trial_setup(window, genv, params)
 
     # show sample screen and collect gaze data 
-    trial_info = sample_screen_protocol(window, el_tracker, params, trial_info)
+    trial_info = sample_screen_protocol(window, genv, el_tracker, params, trial_info)
     
     # collect responses on match screen 
-    trial_info = match_screen_protocol(window, el_tracker, params, trial_info)   
+    trial_info = match_screen_protocol(window, genv, el_tracker, params, trial_info)   
     
     # migrate all the parameter information over to the trial data
     for i_param in params: trial_info[i_param] = params[i_param]
@@ -456,28 +469,6 @@ def image_order_protocol(params):
         
     return images
 
-def eyetracker_protocols(i_protocol, params): 
-    """need to define all the eye-tracking protocols for eyelink + tobii"""
-    
-    if i_protocol == 'calibration': 
-        # initial calibration in experiment
-        pass 
-
-    elif i_protocol == 'recalibration': 
-        # recalibrate when necessary throughout experiment
-        pass
-    
-    elif i_protocol == 'validate': 
-        # make sure we're still calibrated at the beginning of each trial
-        pass 
-    
-    elif i_protocol == 'log_info': 
-        # pass information to itracker 
-        pass 
-
-    return None 
-
-
 def setup_eyelink_for_experiment(params): 
 
     # Switch to the script folder
@@ -552,8 +543,13 @@ if __name__ == '__main__':
         # keys to escape the experiment
         'escape_keys': ['q', 'escape'],
         # show sample for ... 'self_paced' 'variable' 'fixed'
-        'sample_observationtime': 'fixed',  
-        # time on sample screen if false—list w 1|2 numbers 
+        'keyboard_map': {'1': 'left', '0': 'right'},
+        # 
+        'proceed_key': 'space',  
+        'sample_timing': 'self_paced',  
+        # set timeout for self paced + match screen (in seconds) 
+        'self_paced_timeout': 10, 
+        # time on sample screen if not self paced--a list w/ 1|2 numbers 
         'sampletime': [.2, 1] , 
         # entering into fullscreen 
         'full_screen': True, 
