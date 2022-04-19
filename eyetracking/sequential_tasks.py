@@ -1,6 +1,7 @@
 from psychopy import core, visual, event, monitors
 from datetime import datetime
 import os, sys, pandas, numpy as np
+import pylink, eyelink_functions
 
 def generate_differentmatch(params, trialinfo):
     
@@ -67,7 +68,7 @@ def generate_match_images(params, trial_info):
     
     return same_different_options, trial_info
 
-def generate_match_screen(window, params, trial_info): 
+def setup_match_screen(window, params, trial_info): 
     """generates a pair of possible match-screen images and selects these based on the experimental protocol"""
     
     matches, trial_info = generate_match_images(params, trial_info) 
@@ -125,12 +126,11 @@ def generate_match_screen(window, params, trial_info):
         trial_info['matchscreen_different_identity'] = get_identity(matches['different'] ) 
         trial_info['matchscreen_different_viewpoint'] = get_viewpoint(matches['different']) 
     
-    # make the back-screen the front-screen  
-    window.flip()
+    # REMEMBER: we haven't visualize match screen at the point 
     # clear the keyboard buffer (for memory + data collection purposes) 
     event.clearEvents()        
-    
-    return trial_info
+ 
+    return window, trial_info
 
 def generate_mask(window, image_path, seconds_to_display): 
     """generates a mask using the sample image"""
@@ -160,9 +160,14 @@ def generate_mask(window, image_path, seconds_to_display):
     # remove mask — by displaying nothing 
     window.flip()
 
-def stimulus_presentation_protocol(window, params, trial_info): 
+def pre_trial_setup(window, genv, params): 
+    """ 
+    1. ask for keypress to initiate trial
+    2. recalibrate using a fixation 
+    3. return eyetracker object prepped for trial 
+    """
     
-    # display some text at the beginning of each trial
+    # define text to show at beginning of/to initiate each trial 
     initiate_trial_screen = visual.TextStim(window, 'press spacebar to begin the next trial') 
     # draw on back screen 
     initiate_trial_screen.draw()
@@ -170,24 +175,34 @@ def stimulus_presentation_protocol(window, params, trial_info):
     window.flip()
     
     # wait for keyboard response to initiate trial 
-    while True: 
-        if event.waitKeys()[0] == 'space': 
-            break 
-        elif event.waitKeys()[0] in ['q', 'escape']: 
-            exit() 
+    if event.waitKeys()[0] == 'space': 
+        pass
+    elif event.waitKeys()[0] in ['q', 'escape']: 
+        exit() 
+    
+	# gaze recalibration from fixation
+    el_tracker = eyetracker_setup_for_trial(window, genv, params) 
+
+    return el_tracker
+
+def sample_screen_protocol(window, el_tracker, params, trial_info): 
+   
     
     # set the path to trial image  
     sample_image_path = os.path.join(params['image_directory'], trial_info['sample_image'])
-    
     # define sample image
     sample_stimulus = visual.ImageStim(window, image=sample_image_path)
     # project sample image on the back-screen 
     sample_stimulus.draw()
+    
+	# start gaze recording 
+    el_tracker = start_gaze_recording(el_tracker) 
     # make the back-screen the front-screen  
     window.flip() 
     # time image presentation 
     stimulus_time = core.Clock()
-    
+
+    # record eye movements during stimulus presentation     
     if params['sample_observationtime'] == 'self_paced': 
         
         # wait for responce before moving on
@@ -206,10 +221,13 @@ def stimulus_presentation_protocol(window, params, trial_info):
 
         # wait for alotted time
         while stimulus_time.getTime() < i_time: pass 
-
+	
     # measure actual time required for all observation types 
     trial_info['stimulus_presentation_time'] = stimulus_time.getTime()
     
+    # stop eye tracker 
+    stop_gaze_recording(el_tracker) 
+   
     ##### masking protocol
     if params['use_mask']: 
         generate_mask(window, sample_image_path, params['masktime']) 
@@ -232,10 +250,17 @@ def feedback_protocol(window, params, response):
         # wait for given amount of time, depending on correct/incorrect
         core.wait([params['wrongtime'], params['righttime']][response])
 
-def collect_responses(window, params, trial_info): 
-    
+def match_screen_protocol(window, el_tracker, params, trial_info): 
+
+    # setup--don't show yet--match screen in preparation for data collection  
+    window, trial_info = setup_match_screen(window, params, trial_info) 
+ 
+    # start gaze recording
+    el_tracker = start_gaze_recording(el_tracker) 
+    # show the match screen which is prepped 
+    window.flip()
     # start recording response time info 
-    response_timeinfo = core.Clock() 
+    response_timeinfo = core.Clock()
     # wait for keyboard responses for allowed keys
     trial_response = None
     
@@ -266,22 +291,23 @@ def collect_responses(window, params, trial_info):
     
     # clear the buffer of everything 
     event.clearEvents()
+    stop_gaze_recording(el_tracker)     
     
     return trial_info 
 
-def generate_trial(window, sample_image, params): 
-    
+def run_single_trial(window, genv, sample_image, params): 
+  
     # initialise trial info to save 
     trial_info  = {'sample_image': sample_image} 
     
-    # present stimulus according to protocol (including duration, masking, etc.) 
-    trial_info = stimulus_presentation_protocol(window, params, trial_info)
-    
-    # present the match screen 
-    trial_info = generate_match_screen(window, params, trial_info) 
+    # prep eyetracker for trial  
+    el_tracker = pre_trial_setup(window, genv, params)
+
+    # show sample screen and collect gaze data 
+    trial_info = sample_screen_protocol(window, el_tracker, params, trial_info)
     
     # collect responses on match screen 
-    trial_info = collect_responses(window, params, trial_info)   
+    trial_info = match_screen_protocol(window, el_tracker, params, trial_info)   
     
     # migrate all the parameter information over to the trial data
     for i_param in params: trial_info[i_param] = params[i_param]
@@ -289,6 +315,63 @@ def generate_trial(window, sample_image, params):
     if params['verbose']: print('\n\nDATA\n', trial_info) 
     
     return trial_info 
+
+def eyetracker_setup_for_trial(win, genv, params): 
+
+    scn_width = params['scn_width']
+    scn_height = params['scn_height']
+
+    # get a reference to the currently active EyeLink connection
+    el_tracker = pylink.getEYELINK()
+
+    # put the tracker in the offline mode first
+    el_tracker.setOfflineMode()
+    
+    ######el_tracker.sendMessage('TRIALID %d' % trial_index)
+
+    # terminate the task if no longer connected to the tracker or
+    if (not el_tracker.isConnected()) or el_tracker.breakPressed():
+        eyelink_functions.terminate_task(win, genv, params)
+        return pylink.ABORT_EXPT
+    # drift-check and re-do camera setup if ESCAPE is pressed
+    try:
+        error = el_tracker.doDriftCorrect(int(scn_width/2.0), int(scn_height/2.0), 1, 1)
+        # break following a success drift-check
+        if error is not pylink.ESC_KEY:
+            pass
+    except:
+        print('failed to drift correct') 
+
+    # put tracker in idle/offline mode before recording
+    el_tracker.setOfflineMode()
+
+    return el_tracker
+
+
+def start_gaze_recording(el_tracker): 
+
+    # start recording
+    try:
+        el_tracker.startRecording(1, 1, 1, 1)
+    except RuntimeError as error:
+        print("ERROR:", error)
+        eyelink_functions.abort_trial()
+        return pylink.TRIAL_ERROR
+
+    # Allocate some time for the tracker to cache some samples
+    pylink.pumpDelay(100)
+	
+    return el_tracker
+
+def stop_gaze_recording(el_tracker): 
+
+    # stop recording; add 100 msec to catch final events before stopping
+    pylink.pumpDelay(100)
+    el_tracker.stopRecording()
+
+    # Viewer User Manual, "Protocol for EyeLink Data to Viewer Integration"
+    el_tracker.sendMessage('TRIAL_RESULT %d' % pylink.TRIAL_OK)
+
 
 def generate_subject_id(path_to_data, subject_id=None): 
     """generate id used to save data — build it out after talking with Akshay"""
@@ -323,7 +406,8 @@ def image_order_protocol(params):
     
     if params['sample_image_protocol'] == 'shuffle': 
         # for the moment, shuffle experimmental images
-        images = np.random.permutation(os.listdir(params['image_directory']))
+        files = [i for i in os.listdir(params['image_directory']) if 'view' in i]
+        images = np.random.permutation(files)
         
     return images
 
@@ -349,7 +433,49 @@ def eyetracker_protocols(i_protocol, params):
     return None 
 
 
-def setup_camera_and_calibrate(el_tracker, params): 
+def setup_eyelink_for_experiment(params): 
+
+    # Switch to the script folder
+    script_path = os.path.dirname(sys.argv[0])
+    if len(script_path) != 0:
+        os.chdir(script_path)
+
+    params = eyelink_functions.setup_edf_file(params)
+
+    el_tracker = eyelink_functions.connect_to_eyelink(params)
+	
+    params = eyelink_functions.open_edf_file(params, el_tracker) 
+	
+    eyelink_functions.configure_tracker(el_tracker, params) 
+
+    win, genv, params = eyelink_functions.setup_graphics_environment_for_calibration(el_tracker, params)
+
+    eyelink_functions.setup_calibration_target(genv, params)
+
+    ###################### Step 5: Set up the camera and calibrate the tracker
+
+    # Show the task instructions
+    task_msg = 'In the task, you may press the SPACEBAR to end a trial\n' + \
+        '\nPress Ctrl-C to if you need to quit the task early\n'
+    if params['dummy_mode']:
+        task_msg = task_msg + '\nNow, press ENTER to start the task'
+    else:
+        task_msg = task_msg + '\nNow, press ENTER twice to calibrate tracker'
+    eyelink_functions.show_msg(params, win, genv, task_msg)
+
+    # skip this step if running the script in Dummy Mode
+    if not params['dummy_mode']:
+        try:
+            el_tracker.doTrackerSetup()
+        except RuntimeError as err:
+            print('ERROR:', err)
+            el_tracker.exitCalibration()
+    
+    print('eyetracker sucessfully setup!') 
+
+    return win, genv, params, el_tracker
+
+def setup_camera_and_calibrate(win, el_tracker, params): 
 
     # Step 5: Set up the camera and calibrate the tracker
 
@@ -360,7 +486,7 @@ def setup_camera_and_calibrate(el_tracker, params):
         task_msg = task_msg + '\nNow, press ENTER to start the task'
     else:
         task_msg = task_msg + '\nNow, press ENTER twice to calibrate tracker'
-    show_msg(win, task_msg)
+    eyelink_functions.show_msg(params, win, genv, task_msg)
 
     # skip this step if running the script in Dummy Mode
     if not params['dummy_mode']:
@@ -385,7 +511,7 @@ if __name__ == '__main__':
         # time on sample screen if false—list w 1|2 numbers 
         'sampletime': [.2, 1] , 
         # entering into fullscreen 
-        'fullscreen': True, 
+        'full_screen': True, 
         # ratio of same/different 
         'proportion_same': .5, 
         # experiment type: 2|1 ('double'|'single') images on match screen
@@ -408,64 +534,42 @@ if __name__ == '__main__':
         'righttime':.5,
         # print out data from the terminal 
 		'verbose': True,
-	
-######## eyelink integration params
+        # eyelink integration params
         'use_retina': False, 
-        'dummy_mode': False, 
-		 
+        # decide whether we're actually running eyetracker 
+        'dummy_mode': False,
+        'fixation_image_location':  os.path.join(os.getcwd(),'images'),  
 		}
     
-    import eyelink_functions 
-
-    # Switch to the script folder
-    script_path = os.path.dirname(sys.argv[0])
-    if len(script_path) != 0:
-        os.chdir(script_path)
-
-    params = eyelink_functions.setup_edf_file(params)
-
-    el_tracker = eyelink_functions.connect_to_eyelink(params)
-	
-    params = open_edf_file(params) 
-	
-    configure_tracker(params) 
-
-    setup_camera_and_calibrate(el_tracker, params) 
-
-
-###########
 
     # generate a subject id we can use to save data from this experiment
     subject_id = generate_subject_id(os.getcwd()) 
    
-    # create the 'window' used to present stimuli throughout the experiment 
-    experiment_window = visual.Window(fullscr=params['fullscreen'], monitor="testMonitor", screen=1)
+    # HEAVY LIFTING
+    experiment_window, genv, params, el_tracker = setup_eyelink_for_experiment(params) 	
     
-    # determine screen width and height 	
-    params['screen_width'], params['screen_height'] = experiment_window.size
- 
     # determine how sample images will be ordered
     images = image_order_protocol(params) 
     
     # create dataframe for all trials in experiment 
     experiment_data = pandas.DataFrame({}) 
     
-    ####### eyetracker = eyetracking_protocols('calibrate', params) 
-
     # iterate across all images/objects
-    for i_image in images: 
-        
+    for i_image in images[:3]: 
+ 
         # create single trial, evaluate performance, return trial data 
-        trial_data = generate_trial(experiment_window, i_image, params)
+        trial_data = run_single_trial(experiment_window, genv, i_image, params)
+        
         # aggregate data across trials 
         experiment_data = experiment_data.append(trial_data, ignore_index=True) 
         # for each trial, save cumulative data collected within experiment 
         experiment_data.to_csv('%s.csv'%subject_id)  
         # print to terminal 
         if params['verbose']: print('...data saved for %s'%subject_id)
-    
+   
+    # begin termination protocols 
+    eyelink_functions.terminate_task(experiment_window, genv, params) 
     # close experiment window 
     experiment_window.close()
-    
     # close psychopy 
     core.quit()

@@ -127,7 +127,7 @@ def connect_to_eyelink(params):
 
 	return el_tracker
 
-def open_edf_file(params):
+def open_edf_file(params, el_tracker):
  
 	# Step 2: Open an EDF data file on the Host PC
 	edf_file = params['edf_fname'] + ".EDF"
@@ -152,7 +152,7 @@ def open_edf_file(params):
 	params['edf_file'] = edf_file
 	return params
 
-def configure_tracker(el_tracker): 
+def configure_tracker(el_tracker, params): 
 
 	# Step 3: Configure the tracker
 	#
@@ -203,7 +203,7 @@ def setup_graphics_environment_for_calibration(el_tracker, params): #use_retina=
 	#
 	# Open a window, be sure to specify monitor parameters
 	mon = monitors.Monitor('myMonitor', width=53.0, distance=70.0)
-	win = visual.Window(fullscr=full_screen,
+	win = visual.Window(fullscr=params['full_screen'],
 			    monitor=mon,
 			    winType='pyglet',
 			    units='pix', 
@@ -261,7 +261,7 @@ def setup_calibration_target(genv, params):
 
 	# Use a picture as the calibration target
 	genv.setTargetType('picture')
-	genv.setPictureTarget(os.path.join('images', 'fixTarget.bmp'))
+	genv.setPictureTarget(os.path.join(params['fixation_image_location'], 'fixTarget.bmp'))
 
 	# Configure the size of the calibration target (in pixels)
 	# this option applies only to "circle" and "spiral" targets
@@ -286,29 +286,27 @@ def setup_calibration_target(genv, params):
 # define a few helper functions for trial handling
 
 
-def clear_screen(win):
+def clear_screen(win, genv):
 	""" clear up the PsychoPy window"""
 	win.fillColor = genv.getBackgroundColor()
 	win.flip()
 
 
-def show_msg(win, text, wait_for_keypress=True):
-	""" Show task instructions on screen"""
-
-	msg = visual.TextStim(win, text,
+def show_msg(params, win, genv, text, wait_for_keypress=True):
+    """ Show task instructions on screen"""
+    msg = visual.TextStim(win, text,
                           color=genv.getForegroundColor(),
                           wrapWidth=params['scn_width']/2)
-	clear_screen(win)
-	msg.draw()
-	win.flip()
-
+    clear_screen(win, genv)
+    msg.draw()
+    win.flip()
     # wait indefinitely, terminates upon any key press
-	if wait_for_keypress:
-		event.waitKeys()
-		clear_screen(win)
+    if wait_for_keypress:
+        event.waitKeys()
+        clear_screen(win, genv)
 
 
-def terminate_task(win, params):
+def terminate_task(win, genv, params):
 	""" Terminate the task gracefully and retrieve the EDF data file
 	file_to_retrieve: The EDF on the Host that we would like to download
 	win: the current window used by the experimental script
@@ -337,7 +335,7 @@ def terminate_task(win, params):
 
 		# Show a file transfer message on the screen
 		msg = 'EDF data is transferring from EyeLink Host PC...'
-		show_msg(win, msg, wait_for_keypress=False)
+		show_msg(params, win, genv, msg, wait_for_keypress=False)
 
 		# Download the EDF data file from the Host PC to a local data folder
 		# parameters: source_file_on_the_host, destination_file_on_local_drive
@@ -369,7 +367,7 @@ def abort_trial():
 		el_tracker.stopRecording()
 
 	# clear the screen
-	clear_screen(win)
+	clear_screen(win, genv)
 	# Send a message to clear the Data Viewer screen
 	bgcolor_RGB = (116, 116, 116)
 	el_tracker.sendMessage('!V CLEAR %d %d %d' % bgcolor_RGB)
@@ -394,7 +392,7 @@ def run_trial(trial_pars, trial_index, win, params):
 	
 	# load the image to display, here we stretch the image to fill full screen
 	img = visual.ImageStim(win,
-							image=os.path.join('images', pic),
+							image=os.path.join(params['path_to_images'], pic),
 							size=(scn_width, scn_height))
 
 	# get a reference to the currently active EyeLink connection
@@ -425,7 +423,7 @@ def run_trial(trial_pars, trial_index, win, params):
 	#             crop_width, crop_height, x, y on the Host, drawing options
 	#
 	# Use the code commented below to convert the image and send the backdrop
-	im = Image.open('images' + os.sep + pic)  # read image with PIL
+	im = Image.open(params['path_to_images'] + os.sep + pic)  # read image with PIL
 	im = im.resize((scn_width, scn_height))
 	img_pixels = im.load()  # access the pixel data of the image
 	pixels = [[img_pixels[i, j] for i in range(scn_width)] for j in range(scn_height)]
@@ -467,7 +465,7 @@ def run_trial(trial_pars, trial_index, win, params):
 		# terminate the task if no longer connected to the tracker or
 		# user pressed Ctrl-C to terminate the task
 		if (not el_tracker.isConnected()) or el_tracker.breakPressed():
-			terminate_task(win)
+			terminate_task(win, genv, params)
 			return pylink.ABORT_EXPT
 		# drift-check and re-do camera setup if ESCAPE is pressed
 		try:
@@ -496,7 +494,7 @@ def run_trial(trial_pars, trial_index, win, params):
 	pylink.pumpDelay(100)
 
 	# show the image, and log a message to mark the onset of the image
-	clear_screen(win)
+	clear_screen(win, genv)
 	img.draw()
 	win.flip()
 	el_tracker.sendMessage('image_onset')
@@ -510,7 +508,7 @@ def run_trial(trial_pars, trial_index, win, params):
     # send over a message to specify where the image is stored relative
     # to the EDF data file, see Data Viewer User Manual, "Protocol for
     # EyeLink Data to Viewer Integration"
-	bg_image = '../../images/' + pic
+	bg_image = params['path_to_images'] + pic
 	imgload_msg = '!V IMGLOAD CENTER %s %d %d %d %d' % (bg_image,
 														int(scn_width/2.0),
 														int(scn_height/2.0),
@@ -558,7 +556,7 @@ def run_trial(trial_pars, trial_index, win, params):
 			if keycode == 'escape':
 				el_tracker.sendMessage('trial_skipped_by_user')
 				# clear the screen
-				clear_screen(win)
+				clear_screen(win, genv)
 				# abort trial
 				abort_trial()
 				return pylink.SKIP_TRIAL
@@ -566,11 +564,11 @@ def run_trial(trial_pars, trial_index, win, params):
 			# Terminate the task if Ctrl-c
 			if keycode == 'c' and (modifier['ctrl'] is True):
 				el_tracker.sendMessage('terminated_by_user')
-				terminate_task(win)
+				terminate_task(win, genv, params)
 				return pylink.ABORT_EXPT
 
 	# clear the screen
-	clear_screen(win)
+	clear_screen(win, genv)
 	el_tracker.sendMessage('blank_screen')
 	# send a message to clear the Data Viewer screen as well
 	el_tracker.sendMessage('!V CLEAR 128 128 128')
@@ -594,7 +592,8 @@ if __name__ == '__main__':
 
 	########### iniaitlize structure for any paramaters 	
 	params = {} 
-
+	params['path_to_images'] = '~/psychopy/eyelink_base_functions/examples/Psychopy_examples/picture/images/'
+	params['fixation_image_location'] =  '~/psychopy/eyelink_base_functions/examples/Psychopy_examples/picture/images/'
 	# Switch to the script folder
 	script_path = os.path.dirname(sys.argv[0])
 	if len(script_path) != 0:
@@ -627,7 +626,7 @@ if __name__ == '__main__':
 
 	el_tracker = connect_to_eyelink(params) 
 	
-	params = open_edf_file(params)	
+	params = open_edf_file(params, el_tracker)	
 	
 	configure_tracker(el_tracker) 
 
@@ -644,7 +643,7 @@ if __name__ == '__main__':
 	    task_msg = task_msg + '\nNow, press ENTER to start the task'
 	else:
 	    task_msg = task_msg + '\nNow, press ENTER twice to calibrate tracker'
-	show_msg(win, task_msg)
+	show_msg(params, win, genv, task_msg)
 
 	# skip this step if running the script in Dummy Mode
 	if not params['dummy_mode']:
@@ -668,4 +667,4 @@ if __name__ == '__main__':
 	    trial_index += 1
 
 	# Step 7: disconnect, download the EDF file, then terminate the task
-	terminate_task(win, params)
+	terminate_task(win, genv, params)
