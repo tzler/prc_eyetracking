@@ -8,7 +8,7 @@ params = {
   // total number of trials in experiment
   n_trials: 3,
   // trial by trial feedback during experiment
-  feedback: false, 
+  feedback: true, 
   // bonus per each correct response
   trial_bonus : .10, 
   // penalty for each incorrect response

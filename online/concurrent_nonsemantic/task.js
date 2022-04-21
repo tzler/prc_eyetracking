@@ -10,6 +10,10 @@ jsPsych.data.addProperties({
   session_id: session_id
 });
 
+img_path = params['image_path']
+
+123456788910
+
 // instructions up to practice trials: includes visualization of trials and responses
 var instructions = {
   type: "instructions",
@@ -21,12 +25,12 @@ var instructions = {
     "<p style='font-size: 150%'><b>Experiment Layout</b></p>" +
     "<p>In each trial, you'll be looking at three black and white images at the center of the screen, similar to this:</p>" + 
     "<dev>" +
-      '<img style="width:20%" src="images/008_001_view02.png"></img>' +
-      '<img style="width:20%" src="images/008_001_view01.png"></img>' + 
+      '<img style="width:20%" src="'+params['image_path']+'008_001_view02.png"></img>' +
+      '<img style="width:20%" src="'+params['image_path']+'008_001_view01.png"></img>' + 
     "</dev>" + 
     "<br>" + 
     "<dev>" + 
-      '<img style="width:20%" src="images/008_000_view00.png"></img>' + 
+      '<img style="width:20%" src="'+params['image_path']+'008_000_view00.png"></img>' + 
     "</dev>" + 
     "<p>Two of the images will be of the same object shown from different viewpoints." + 
     "<br>One of these images will be of a different object. We'll call the different object <b>the oddity</b>. </p>", 
@@ -34,12 +38,12 @@ var instructions = {
     "<p style='font-size:150%'><b>Your goal</b><p>" + 
     "<p>In every trial, your task is to look at all the images presented to you and select the oddity. </p>" + 
     "<dev>" +
-      '<img style="width:20%" src="images/008_001_view02.png"></img>' +
-      '<img style="width:20%" src="images/008_001_view01.png"></img>' + 
+      '<img style="width:20%" src="'+params['image_path']+'008_001_view02.png"></img>' +
+      '<img style="width:20%" src="'+params['image_path']+'008_001_view01.png"></img>' + 
     "</dev>" + 
     "<br>" + 
     "<dev>" + 
-      '<img style="width:20%" src="images/008_000_view00.png"></img>' + 
+      '<img style="width:20%" src="'+params['image_path']+'008_000_view00.png"></img>' + 
     "</dev>" + 
     "<p>In the example above top two images are of the same object, shown from different viewpoints and lighting conditions." + 
     "<br>The oddity is on the bottom. Make sure you can see the difference between them before moving on!</p>",  
@@ -48,9 +52,9 @@ var instructions = {
     "<p>The images below, for example, " +
     "are all of the SAME object shown from different viewpoints, sizes, and with different lighting:</p>" +
     "<dev>" +
-      '<img style="width:30%" src="images/008_111_view00.png"></img>' +
-      '<img style="width:30%" src="images/008_111_view01.png"></img>' +
-      '<img style="width:30%" src="images/008_111_view02.png"></img>' +
+      '<img style="width:30%" src="'+params['image_path']+'008_111_view00.png"></img>' +
+      '<img style="width:30%" src="'+params['image_path']+'008_111_view01.png"></img>' +
+      '<img style="width:30%" src="'+params['image_path']+'008_111_view02.png"></img>' +
     "</dev>" +
     "<p>It's really important that you " +
     "<b>ignore these viewpoint/size/lighting differences</b> and pay attention to the object itself.</p>",
@@ -63,49 +67,46 @@ var instructions = {
     "<p>There will be 3 different kinds of surfaces in this experiment; two are shown here.</p>" +
     "<p>Make sure you understand the surface-level difference in these two images before moving on.</p>" +
     "<dev>" +
-      '<img style="width:35%" src="images/008_110_view00.png"></img>' +
-      '<img style="width:35%" src="images/008_010_view01.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view00.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_010_view01.png"></img>' +
     "</dev>",
     // structure condition description
     "<p style='font-size:130%'><b>These objects are different because of their *structure*</b><p>" +
     "<p>The large parts of these objects are combined differently—it's the same pieces in a different combination.</p>" +
     "<p>Make sure you understand the structure-level difference in these two images before moving on.</p>" +
     "<dev>" +
-      '<img style="width:35%" src="images/008_110_view02.png"></img>' +
-      '<img style="width:35%" src="images/008_100_view00.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view02.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_100_view00.png"></img>' +
     "</dev>",
     // part location condition description
     "<p style='font-size:130%'><b>These objects are different because of the *rotation* of the smallest object part</b><p>" +
     "<p>The small part of these two objects are the same but are each rotated differently--we'll call this a different 'configuration.'</p>"+
     "<p>Make sure you understand the rotation-level difference in these two images before moving on.</p>" +
     "<dev>" +
-      '<img style="width:35%" src="images/008_010_view02.png"></img>' +
-      '<img style="width:35%" src="images/008_011_view01.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_010_view02.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_011_view01.png"></img>' +
     "</dev>",
      // part location condition description
     "<p style='font-size:130%'><b>These objects are the same</b><p>" +
     "<p>While these objects are presented from different viewpoints and sizes, with different lighting, they are the same.<p>" +
     "<p>To be the same, two images have to have the same surface, structure, and small-part rotations</p>" +
     "<dev>" +
-      '<img style="width:35%" src="images/008_110_view00.png"></img>' +
-      '<img style="width:35%" src="images/008_110_view02.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view00.png"></img>' +
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view02.png"></img>' +
     "</dev>",
     //
     "<p style='font-size:150%'><b>Make sure you understand these differences</b></p>" +
     "<p>All the differences between objects will be from their surface, structure, or rotation.</p>", 
-    
-    
-    
     // keyboard responses
     "<p style='font-size: 150%'><b>Response keys</b></p>" +
     "Once you identify the oddity, you'll have to use the following keys on your keyboard to select it: &#x2190;, &#x2192; or &#x2193; </p>" + 
       "<dev>" +
-      '<img style="width:20%" src="images/008_001_view02.png"></img>' +
-      '<img style="width:20%" src="images/008_001_view01.png"></img>' + 
+      '<img style="width:20%" src="'+params['image_path']+'008_001_view02.png"></img>' +
+      '<img style="width:20%" src="'+params['image_path']+'008_001_view01.png"></img>' + 
     "</dev>" + 
     "<br>" + 
     "<dev>" + 
-      '<img style="width:20%" src="images/008_000_view00.png"></img>' + 
+      '<img style="width:20%" src="'+params['image_path']+'008_000_view00.png"></img>' + 
     "</dev>" + 
     "<p>" + 
       "<b>&#x2190;</b> (Left Arrow) Object on the left" + 
