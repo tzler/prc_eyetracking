@@ -3,7 +3,12 @@ params = {
   noise_mask: '../stimuli/white_noise.jpeg', 
   image_path: '../stimuli/objectome/',
   feedback: true, 
-  first_stim_duration: 100, 
+  background_color: '#808080', // chosen to match the background in the hvm stimuli
+  noisemask_duration: 100, // ms 
+  max_decision_time: 10000,// ms  
+  fixation_duration: 500, // ms 
+  first_stim_duration: [100, 200, 1000], 
+  second_stim_duration: 5000, 
   // total number of trials in experiment
   n_trials: 2, 
   // categories to draw the typicals from

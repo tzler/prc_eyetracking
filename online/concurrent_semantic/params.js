@@ -1,5 +1,6 @@
 params = { 
   experiment_type: 'concurrent',  
+  background_color: '#808080', // chosen to match background of hvm stimuli 
   // total number of trials in experiment
   n_trials: 110, 
   // categories to draw the typicals from

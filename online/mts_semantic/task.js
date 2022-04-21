@@ -59,8 +59,8 @@ var instructions = {
   show_clickable_nav: true,
   show_page_number: false,
   post_trial_gap: 500,
-  on_finish: function(){
-    document.body.style.backgroundColor = "#808080"
+  on_start: function(){
+    document.body.style.backgroundColor = params['background_color'] // "#808080"
   }
 };
 
@@ -69,6 +69,7 @@ var practice_trial  = {
   type: 'sequential_mts',
   stimuli: '',
   noise_mask: params['noise_mask'], 
+  first_stim_duration : params['first_stim_duration'], 
   //choices: [37, 39, 40], 
   prompt: '',  // 'Use either the <b>Left</b>, <b>Right</b>, or <b>Down</b> Arrow to choose the oddity',
   response_ends_trial: true,
@@ -98,6 +99,17 @@ var practice_trial  = {
 }
 
 
+
+var fixation = {
+  type: 'html-keyboard-response',
+  stimulus: '<p><font size="20">+</font></p>',
+  response_ends_trial: false,
+  trial_duration: params['fixation_duration'],
+  prompt: '',
+  choices: '', //['space'],
+  on_finish: function(data){console.log('on_finish fixation', data)} 
+}
+
 // practice trial feedback
 var practice_inter_trial_screen  = {
   type: 'image-keyboard-response',
@@ -112,7 +124,7 @@ var practice_inter_trial_screen  = {
     if (practice_met) { 
       exit = '<p>Press the space bar to end the practice trials </p>' 
     } else { 
-      exit = '<p>Press the space bar to begin another practice trial</p>' 
+      exit = '<p>Press the space bar to begin the next practice trial</p>' 
     } 
     // set complete feedback string to present to subjects
     //display = '<p style="font-size:200%"><b>'+emoji+'</b></p>'+exit
@@ -123,7 +135,7 @@ var practice_inter_trial_screen  = {
 
 // block with conditional loop based on criterion performance
 var  practice_block= {
-  timeline: [ practice_trial, practice_inter_trial_screen],
+  timeline: [ fixation, practice_trial, practice_inter_trial_screen],
   loop_function: function(data){
     exit_key = 'enter'
     
@@ -156,22 +168,22 @@ var consent_form = {
     '</div>' + 
     "<p>Press 'y' if you agree to participate in this study</p>" ,  
   choices: ['y'],
-  on_start: function(){
-    document.body.style.backgroundColor = "#ffffff"
-  }, 
+//  on_start: function(){
+//    document.body.style.backgroundColor = "#ffffff"
+//  }, 
 }
 
 // experimental screens between trials
 var inter_trial_screen  = {
   type: 'image-keyboard-response',
   stimulus: '',
-  prompt: function() { 
-    if (params.feedback) { 
-      emoji = ['D:', ':D'][jsPsych.data.get().last(1).filter({correct:true}).count()]
-    } else { emoji = '' 
-    } 
-    feedback = '<p><b>' + emoji + '</b></p><p>Press the space bar to begin the next trial</p>' 
-    return feedback}, 
+  prompt:' <p>Press the space bar to begin the next trial</p>', // function() { 
+   // if //(params.feedback) { 
+   //   emoji = ['D:', ':D'][jsPsych.data.get().last(1).filter({correct:true}).count()]
+   // } else { emoji = '' 
+   // } 
+   // feedback = '<p><b>' + emoji + '</b></p><p>Press the space bar to begin the next trial</p>' 
+   // return feedback}, 
   choices: ['space'], 
 }
 
@@ -210,6 +222,7 @@ for (i_trial=0; i_trial < params.n_trials; i_trial++) {
     type: 'sequential_mts',
     stimulus_info: stim_info,
     stimuli: stim_info.stimuli, 
+    first_stim_duration : params['first_stim_duration'],
     noise_mask: params['noise_mask'],
     stimulus: stim_info.stimuli,
     correct_response: stim_info.correct_response, 
@@ -245,10 +258,10 @@ var full_screen_start = {
   "<p>There's a bonus (+$" + params.trial_bonus.toFixed(2) + ") for each correct choice you make " + 
   "and a big penalty (-$" + params.trial_penalty.toFixed(2) + ") for each mistake!<p>" + 
   "<p>In the experiment, you'll recieve feedback at the end of the experiment, not after every trial</p>", 
-  button_label: '<p style="color:"><b>Click to enter full screen and begin experiment</b></p>', 
+  button_label: '<p style="color:"><b>Clck to enter full screen and begin experiment</b></p>', 
  fullscreen_mode: true, 
  on_finish: function(){ 
-  document.body.style.backgroundColor = "#808080"
+  document.body.style.backgroundColor = params['background_color']
  }
 };
 
@@ -312,7 +325,7 @@ timeline.push(full_screen_start)
 shuffled_stims = shuffle(all_stimuli) 
 // add each trial to timeline + iti
 for (i=0; i < all_stimuli.length; i++) { 
-  timeline.push(shuffled_stims[i], inter_trial_screen)
+  timeline.push(inter_trial_screen, fixation, shuffled_stims[i])
 }
 // add debrief block
 timeline.push(experiment_debrief)

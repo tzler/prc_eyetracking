@@ -118,6 +118,7 @@ jsPsych.plugins['sequential_mts'] = (function() {
     
     // set protocol for either self paced or fixed time 
     if (trial.first_stim_duration == 'self_paced') {
+      console.log('SELF PACED!') 
       // if there's a stimulus prompt, add it to the screen 
       display_element.innerHTML += trial.first_stim_prompt
       // wait for keyboard responses to move on to next screen 
@@ -131,14 +132,18 @@ jsPsych.plugins['sequential_mts'] = (function() {
     
     // otherwise, only present stimulus for fixed duration (in ms) 
     } else {
+      console.log('CONTROLLED DURATION TIME')
       // MAYBE UPDATE THIS LATER TO BE MORE TEMPORALLY ACCURATE????
           // https://stackoverflow.com/questions/29971898/how-to-create-an-accurate-timer-in-javascript
-      // if there are numerous possible presentation lengths, pick one 
+      // if there are numerous possible presentation lengths, pick one
+      console.log('trial', trial) 
       if (trial.first_stim_duration.length) {
+        console.log('VARIABLE DURATION LENGTH') 
         // set a timeout function
         jsPsych.pluginAPI.setTimeout(function() {mask_image();}, shuffle(trial.first_stim_duration)[0]);
       // otherwise just set with the single value 
       } else {
+        console.log('FIXED DURATION LENGTH') 
         // set a timeout function
         jsPsych.pluginAPI.setTimeout(function() {mask_image();}, trial.first_stim_duration);
       }
@@ -188,7 +193,7 @@ jsPsych.plugins['sequential_mts'] = (function() {
         } else { 
           correct = false; 
         } 
-         
+
         var trial_data = {
           'subject_id': subject_id,
           'experiment_id': experiment_id,

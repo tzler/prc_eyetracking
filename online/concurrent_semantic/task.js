@@ -58,8 +58,8 @@ var instructions = {
   show_clickable_nav: true,
   show_page_number: false,
   post_trial_gap: 500,
-  on_finish: function(){
-    document.body.style.backgroundColor = "#808080"
+  on_start: function(){
+    document.body.style.backgroundColor = params['background_color']
   }
 };
 
