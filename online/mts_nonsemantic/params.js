@@ -1,10 +1,14 @@
 params = { 
+
+  stimulus_type: 'nonsemantic',
+  experiment_type: 'sequential_mts', 
+  
   // number of trials correct in a row before practice is over
   practice_criterion: 5, // n right to move on 
   // total number of trials in experiment
   n_trials: 10, 
   // trial by trial feedback during experiment
-  feedback: false, 
+  feedback: true, 
   // bonus per each correct response
   trial_bonus : .10, 
   // penalty for each incorrect response
@@ -18,9 +22,9 @@ params = {
   // might delete soon if not on mturk
   max_experiment_bonus: 2.00, 
   // 
-  image_path: 'images/',
+  image_path: '../stimuli/nonsemantic/',
   //
-  noise_mask: 'images/white_noise.jpeg', 
+  noise_mask: '../stimuli/white_noise.jpeg', 
   // 
   // estimate for average time to complete each trial
   estimate_seconds_per_trial : 4,

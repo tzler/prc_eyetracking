@@ -24,7 +24,7 @@ jsPsych.plugins['sequential_mts'] = (function() {
       noise_mask: {
         type: jsPsych.plugins.parameterType.IMAGE,
         pretty_name: 'Noise',
-        default: 'images/white_noise.jpeg',
+        //default: 'images/white_noise.jpeg',
         array: true,
         description: 'The mask images to be displayed after the stimulus.'
       },  
@@ -214,14 +214,15 @@ jsPsych.plugins['sequential_mts'] = (function() {
           trial_data[ 'stimulus0_rt' ] =  first_stim_info.rt 
         }    
         
-        if (trial_data.correct){ 
-          feedback = '<p style="color:black; font-size:200%">correct! <br><br> &#128516;</p>'
+        if ( params['feedback'] == true ){ 
+          if (trial_data.correct){ 
+            display_element.innerHTML = '<p style="color:black; font-size:200%">correct! <br><br> &#128516;</p>'
+          } else { 
+            display_element.innerHTML = '<div style="color:black; font-size:200%">incorrect <br><br> &#128557;</div>'
+          }
         } else { 
-          feedback = '<div style="color:black; font-size:200%">incorrect <br><br> &#128557;</div>'
+          display_element.innerHTML = ''
         }
-        
-        // display feedback if 
-        display_element.innerHTML = feedback
         
         // migrate metadata over to single variable 
         Object.assign(trial_data, trial.meta)

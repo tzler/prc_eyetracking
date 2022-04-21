@@ -12,36 +12,47 @@ save_trial_to_database = function(trial_data){
 
 function generate_trial(params, info){ 
   
-  // all objects
+  // determine comparison for this trial
+  i_comparison = shuffle(['configuration', 'structure', 'surface'])[0] 
+ 
+  // get a shuffled list of all objects
   objects = shuffle(info['objects'])
   // shuffle which viewpoints are first, second, third
   trial_viewpoints = shuffle([0, 1, 2])
-  // 
+  
+  // identify which object will be repeated
   object0 = objects[0]
-  // select image on sample screen 
-  image0 = info['images'][object0][trial_viewpoints[0]]
-  // select match screen image (SAME) 
-  image1 = info['images'][object0][trial_viewpoints[1]]    
-  // determine type of condition
-
-  i_comparison = shuffle(['configuration', 'structure', 'surface'])[0] 
- 
-  // determine object identity 
+  // determine object identity of the odd-one-out 
   object1 = shuffle( info['pairs'][i_comparison][object0] )[0]
-  // determine image from object identity + a novel viewpoint 
+  
+  // determine first of the repeated images 
+  image0 = info['images'][object0][trial_viewpoints[0]]
+  // determine second of the repeated images 
+  image1 = info['images'][object0][trial_viewpoints[1]]    
+  // determine image of odd-one-out and get instance from novel viewpoint 
   image2 = info['images'][object1][trial_viewpoints[2]]    
- 
-  correct_side = shuffle(['left', 'right'])[0]  
+  
+  if (params['experiment_type'] == 'sequential_mts') { 
 
-  left  = [image2, image1][ 1 * (correct_side == 'left' ) ] 
-  right = [image2, image1][ 1 * (correct_side == 'right') ] 
+    correct_side = shuffle(['left', 'right'])[0]  
 
-  stimuli = [params.image_path+image0, params.image_path+left, params.image_path+right]
-  correct_answer = [0, 1][ 1 * (correct_side=='left') ]
+    left  = [image2, image1][ 1 * (correct_side == 'left' ) ] 
+    right = [image2, image1][ 1 * (correct_side == 'right') ] 
+    trial_stimuli = [params.image_path+image0, params.image_path+left, params.image_path+right]
+    correct_answer = [0, 1][ 1 * (correct_side=='left') ]
+  } 
+
+  if (params['experiment_type'] == 'concurrent') { 
+    
+    trial_stimuli = [ image0, image1] 
+    random_location = Math.round(Math.random() * trial_stimuli.length)
+    trial_stimuli.splice(random_location, 0, image2) 
+    correct_answer = random_location + 1 
+  }
   
   // data to return  
   trial_structure_info = {
-    stimuli: stimuli, 
+    stimuli: trial_stimuli, 
     image_path: params.image_path, 
     answer: correct_answer,
     object0: object0, 
@@ -53,6 +64,7 @@ function generate_trial(params, info){
   }
   return trial_structure_info
 }
+
 //
 //function format_data_for_server(idata, params, trial_period){
 //  var trial_data = {

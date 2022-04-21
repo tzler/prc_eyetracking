@@ -36,6 +36,8 @@ if (manual){
   });
 }
 
+img_path = params['image_path'] 
+
 // instructions up to practice trials: includes visualization of trials and responses
 var instructions = {
   type: "instructions",
@@ -51,7 +53,7 @@ var instructions = {
     // study screen description  
     "<p style='font-size:150%'><b>The 'study' screen</b></p>" +
     "<p>Once you begin the trial you'll see a single image on the <b>study</b> screen, like the example below.</p>" + 
-      '<img style="width:35%" src="images/008_000_view00.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_000_view00.png"></img>' + 
     "<br>You'll have to study this image to understand it's physical properties (e.g. shape, texture).</p>",  
     // disappears 
     "<p style='font-size:150%'><b>The image on the study screen will disappear!</b></p>" + 
@@ -62,8 +64,8 @@ var instructions = {
     "<p>Then, two other images will appear, side by side. One will be the same object presented from a different viewpoint/size/etc." + 
     "<br>The other image will be of a different—but still similar—object.</p>" + 
     "<div>"+ 
-      '<img style="width:25%" src="images/008_000_view02.png"></img>' + 
-      '<img style="width:25%" src="images/008_100_view01.png"></img>' + 
+      '<img style="width:25%" src="'+params['image_path']+'/008_000_view02.png"></img>' + 
+      '<img style="width:25%" src="'+params['image_path']+'/008_100_view01.png"></img>' + 
     "</div>"+ 
     "<p>Your task is to determine which of these two images match the object that was on the study screen." + 
     "<br>If you think the 'match' object is on the left, press the '1', if you think the 'match' object is on the right, press '0'.</p>" +  
@@ -74,9 +76,9 @@ var instructions = {
     "<p>The images below, for example, " + 
     "are all of the SAME object shown from different viewpoints, sizes, and with different lighting:</p>" + 
     "<dev>" +  
-      '<img style="width:30%" src="images/008_111_view00.png"></img>' + 
-      '<img style="width:30%" src="images/008_111_view01.png"></img>' + 
-      '<img style="width:30%" src="images/008_111_view02.png"></img>' + 
+      '<img style="width:30%" src="'+params['image_path']+'/008_111_view00.png"></img>' + 
+      '<img style="width:30%" src="'+params['image_path']+'/008_111_view01.png"></img>' + 
+      '<img style="width:30%" src="'+params['image_path']+'/008_111_view02.png"></img>' + 
     "</dev>" + 
     "<p>It's really important that you " + 
     "<b>ignore these viewpoint/size/lighting differences</b> and pay attention to the object itself.</p>", 
@@ -89,32 +91,32 @@ var instructions = {
     "<p>There will be 3 different kinds of surfaces in this experiment; two are shown here.</p>" +
     "<p>Make sure you understand the surface-level difference in these two images before moving on.</p>" + 
     "<dev>" +  
-      '<img style="width:35%" src="images/008_110_view00.png"></img>' + 
-      '<img style="width:35%" src="images/008_010_view01.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view00.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_010_view01.png"></img>' + 
     "</dev>", 
     // structure condition description
     "<p style='font-size:130%'><b>These objects are different because of their large-scale structure </b><p>" + 
     "<p>The large parts of these objects are combined differently—it's the same pieces in a different combination.</p>" +
     "<p>Make sure you understand the structure-level difference in these two images before moving on.</p>" + 
     "<dev>" +  
-      '<img style="width:35%" src="images/008_110_view02.png"></img>' + 
-      '<img style="width:35%" src="images/008_100_view00.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view02.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_100_view00.png"></img>' + 
     "</dev>", 
     // part location condition description
     "<p style='font-size:130%'><b>These objects are different because of their small-scale structure</b><p>" + 
     "<p>The small part of these two objects are the same but are each rotated differently</p>"+ 
     "<p>Make sure you understand the small-scale differences before moving on.</p>" + 
     "<dev>" +  
-      '<img style="width:35%" src="images/008_010_view02.png"></img>' + 
-      '<img style="width:35%" src="images/008_011_view01.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_010_view02.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_011_view01.png"></img>' + 
     "</dev>", 
      // part location condition description
     "<p style='font-size:130%'><b>These objects are the same</b><p>" + 
     "<p>While these objects are presented from different viewpoints and sizes, with different lighting, they are the same.<p>" + 
     "<p>To be the same, two images have to have the same surfaces, large- and small-scale structure.</p>" + 
     "<dev>" +  
-      '<img style="width:35%" src="images/008_110_view00.png"></img>' + 
-      '<img style="width:35%" src="images/008_110_view02.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view00.png"></img>' + 
+      '<img style="width:35%" src="'+params['image_path']+'008_110_view02.png"></img>' + 
     "</dev>", 
     // final condition description 
     "<p style='font-size:150%'><b>Make sure you understand these differences</b></p>" + 
@@ -159,7 +161,7 @@ var full_screen_start = {
 var practice_trial  = {
   type: 'sequential_mts',
   stimuli: '', //['', '', ''],
-  mask: params['noise_mask'], 
+  noise_mask: params['noise_mask'], 
   response_ends_trial: true,
   on_start: function(data) {
     test_trial = generate_trial(params, stimulus_info)
@@ -229,7 +231,7 @@ function generate_experiment(trials){
     var same_different_trial = {
       type: 'sequential_mts',
       stimuli: trial.stimuli,
-      mask: params['noise_mask'],
+      noise_mask: params['noise_mask'],
       first_stim_duration: params.first_stim_duration,
       second_stim_duration: params.second_stim_duration, 
       noisemask_duration: params.noisemask_duration,
@@ -288,6 +290,6 @@ jsPsych.init({
   timeline: timeline ,
   on_finish: function() {
     console.log('pew pew!')
-    window.location = 'https://app.prolific.co/submissions/complete?cc=546D0558'
+    window.location = 'https://theuselessweb.com/' // 'https://app.prolific.co/submissions/complete?cc=546D0558'
   },
 });
