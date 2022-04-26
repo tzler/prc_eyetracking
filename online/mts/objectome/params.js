@@ -1,7 +1,7 @@
 params = { 
   experiment_type: 'sequential_mts', 
-  noise_mask: '../stimuli/white_noise.jpeg', 
-  image_path: '../stimuli/objectome/',
+  noise_mask: '../../stimuli/white_noise.jpeg', 
+  image_path: '../../stimuli/objectome/',
   feedback: true, 
   background_color: '#808080', // chosen to match the background in the hvm stimuli
   noisemask_duration: 100, // ms 
@@ -35,7 +35,7 @@ params = {
   database : 'oddity', 
   collection : 'lesion',
   iteration : 'pilot1_', 
-  stimulus_path  : '../stimuli/objectome/',
+  stimulus_path  : '../../stimuli/objectome/',
   array_type : '3-way',
   // tell subjects max time experiment should takee
   estimate_seconds_per_trial : 4,

@@ -28,7 +28,7 @@ params = {
   database : 'oddity', 
   collection : 'lesion',
   iteration : 'pilot1_', 
-  stimulus_path  : '../stimuli/objectome/',
+  stimulus_path  : '../../stimuli/objectome/',
   array_type : '3-way',
   // tell subjects max time experiment should takee
   estimate_seconds_per_trial : 4,

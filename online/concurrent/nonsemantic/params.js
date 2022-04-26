@@ -24,7 +24,7 @@ params = {
   // might delete soon if not on mturk
   max_experiment_bonus: 2.00, 
   // 
-  image_path: '../stimuli/nonsemantic/', 
+  image_path: '../../stimuli/nonsemantic/', 
   // 
   choice_array : 'concurrent_3objects',
   // estimate for average time to complete each trial

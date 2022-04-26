@@ -22,9 +22,9 @@ params = {
   // might delete soon if not on mturk
   max_experiment_bonus: 2.00, 
   // 
-  image_path: '../stimuli/nonsemantic/',
+  image_path: '../../stimuli/nonsemantic/',
   //
-  noise_mask: '../stimuli/white_noise.jpeg', 
+  noise_mask: '../../stimuli/white_noise.jpeg', 
   // 
   // estimate for average time to complete each trial
   estimate_seconds_per_trial : 4,

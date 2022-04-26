@@ -111,6 +111,8 @@ jsPsych.plugins['sequential_mts'] = (function() {
     var first_stim_info 
     // 
     var first_stimulus_duration 
+    
+    //console.log('sequential_mts.js, trial.stimuli', trial.stimuli) 
 
     // show the first image 
     display_element.innerHTML = '<img class="sequential-stimulus0" src="' + trial.stimuli[0] + '"></img>';

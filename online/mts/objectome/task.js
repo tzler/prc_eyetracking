@@ -217,6 +217,7 @@ for (i_trial=0; i_trial < params.n_trials; i_trial++) {
   
   // generate stimuli from typical and oddity categories
   stim_info = generate_stimuli(typicals_, oddity_, i_variation, params.stimulus_path)
+  console.log('stim_info', stim_info) 
   stim_info.oddity_type = oddity_type 
   var trial_info  = {
     type: 'sequential_mts',
