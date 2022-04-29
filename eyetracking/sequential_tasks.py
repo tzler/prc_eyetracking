@@ -696,8 +696,11 @@ if __name__ == '__main__':
         # concurrent | sequential 
         'experiment_type': 'concurrent', 
         'stimulus_set': 'barense', 
+<<<<<<< HEAD
         'impose_fixation': True, 
         'fixation_threshold' : 40, 
+=======
+>>>>>>> 4dcc4e1c23b45a73bf55e8054593b58800252dc0
         # how to generate sample images
         'sample_image_protocol': 'shuffle', 
         # how to generate the distractor
@@ -744,10 +747,14 @@ if __name__ == '__main__':
    
     if params['stimulus_set'] == 'barense': 
         params['image_directory'] = os.path.join(os.getcwd(),'../stimuli/barense_2007/')
+<<<<<<< HEAD
     elif params['stimulus_set'] == 'nonsemantic':
         params['image_directory'] = os.path.join(os.getcwd(),'../stimuli/nonsemantic/')
 
 
+=======
+
+>>>>>>> 4dcc4e1c23b45a73bf55e8054593b58800252dc0
     if params['experiment_type'] == 'concurrent': 
         params['keyboard_map'] = {'left': 0, 'right': 1, 'down': 2}
     elif params['experiment_type'] == 'sequential':
@@ -769,7 +776,11 @@ if __name__ == '__main__':
     experiment_data = pandas.DataFrame({}) 
     
     # iterate across all images/objects
+<<<<<<< HEAD
     for i_image in images[:20]: 
+=======
+    for i_image in images[:10]: 
+>>>>>>> 4dcc4e1c23b45a73bf55e8054593b58800252dc0
  
         # create single trial, evaluate performance, return trial data 
         trial_data = run_single_trial(experiment_window, genv, i_image, params)
