@@ -275,6 +275,31 @@ def collect_behavior(window, genv, el_tracker, params, trial_info, screen):
             
             if params['verbose']: print( gaze_x[-1] ) 
   			
+            if params['impose_fixation']:
+                x_init, y_init = int( gaze_x[0] ) , int( gaze_y[0] )
+                
+                x_now = int( gaze_pos[0] - params['screen_width'] / 2)
+                y_now = int( params['screen_height']/ 2.0 - gaze_pos[1]) 
+                
+                if ( len(gaze_x) % 1000)  == 0: 
+                    print( '--x--', x_init, x_now, '--y--', y_init, y_now)
+                    print( 'current_sample', current_sample )  
+
+                if abs(x_init-x_now) > params['fixation_threshold'] or abs(y_init-y_now) > params['fixation_threshold']: 
+                    
+                    print( 'broke fixation') 
+                    #######
+                    # mark lack of response  
+                    trial_info['participant_decision'] = None
+                    # mark incorrect 
+                    trial_info['correct'] = 0
+                    # give feedback
+                    feedback_protocol(window, params, trial_info['correct'])
+                    
+                    print(x_init, y_init, 'now', x_now, y_now, 'current_sample', current_sample, gaze_pos ) 
+                    break
+
+                
         # now, let's deal with the keyboard responses 
         keyboard_response = event.getKeys() 
         
@@ -407,8 +432,12 @@ def concurrent_protocol(window, genv, el_tracker, params, trial_info):
     stimulus1 = visual.ImageStim(window, image=image1, pos=(shiftx, shifty))
     stimulus2 = visual.ImageStim(window, image=image2, pos=(0, -shifty))
 
-    verbose_name = visual.TextStim(window, trial_oddity, color=(1,1,1))
-    verbose_name.draw() 
+    if params['impose_fixation']: 
+        fixation_cross0 = visual.ImageStim(window, image= params['fixation_image_location'], pos=(0, 0) ) 
+        fixation_cross0.draw() 
+
+    #verbose_name = visual.TextStim(window, trial_oddity, color=(1,1,1))
+    #verbose_name.draw() 
     
     # position and same and different images on either the left or right of the screen
     #match_stimulus = visual.ImageStim(window, image=match_image_path, pos=(shift[trial_answer=='right'], 0))
@@ -667,6 +696,8 @@ if __name__ == '__main__':
         # concurrent | sequential 
         'experiment_type': 'concurrent', 
         'stimulus_set': 'barense', 
+        'impose_fixation': True, 
+        'fixation_threshold' : 40, 
         # how to generate sample images
         'sample_image_protocol': 'shuffle', 
         # how to generate the distractor
@@ -674,8 +705,6 @@ if __name__ == '__main__':
         # keys to escape the experiment
         'escape_keys': ['q', 'escape'],
         # show sample for ... 'self_paced' 'variable' 'fixed'
-        'keyboard_map': {'1': 'left', '0': 'right'},
-        # 
         'proceed_key': 'space',  
         'sample_timing': 'self_paced',  
         # set timeout for self paced + match screen (in seconds) 
@@ -715,6 +744,9 @@ if __name__ == '__main__':
    
     if params['stimulus_set'] == 'barense': 
         params['image_directory'] = os.path.join(os.getcwd(),'../stimuli/barense_2007/')
+    elif params['stimulus_set'] == 'nonsemantic':
+        params['image_directory'] = os.path.join(os.getcwd(),'../stimuli/nonsemantic/')
+
 
     if params['experiment_type'] == 'concurrent': 
         params['keyboard_map'] = {'left': 0, 'right': 1, 'down': 2}
@@ -737,7 +769,7 @@ if __name__ == '__main__':
     experiment_data = pandas.DataFrame({}) 
     
     # iterate across all images/objects
-    for i_image in images[:10]: 
+    for i_image in images[:20]: 
  
         # create single trial, evaluate performance, return trial data 
         trial_data = run_single_trial(experiment_window, genv, i_image, params)
