@@ -100,9 +100,9 @@ def setup_edf_file(params):
 	params['session_identifier'] = edf_fname + time_str
 
 	# create a folder for the current testing session in the "results" folder
-	params['session_folder'] = os.path.join(results_folder, params['session_identifier'])
-	if not os.path.exists(params['session_folder']):
-		os.makedirs(params['session_folder'])
+	#params['session_folder'] = os.path.join(results_folder, params['session_identifier'])
+	#if not os.path.exists(params['session_folder']):
+	#	os.makedirs(params['session_folder'])
 	
 	params['edf_fname'] = edf_fname 
 	
@@ -261,7 +261,7 @@ def setup_calibration_target(genv, params):
 
 	# Use a picture as the calibration target
 	genv.setTargetType('picture')
-	genv.setPictureTarget(os.path.join(params['fixation_image_location'], 'fixTarget.bmp'))
+	genv.setPictureTarget(os.path.join(params['fixation_image_location']))
 
 	# Configure the size of the calibration target (in pixels)
 	# this option applies only to "circle" and "spiral" targets
@@ -312,9 +312,9 @@ def terminate_task(win, genv, params):
 	win: the current window used by the experimental script
 	"""
 	
-	session_folder = params['session_folder'] 
-	session_identifier = params['session_identifier'] 
-	edf_file = params['edf_file'] 
+	#session_folder = params['session_folder'] 
+	#session_identifier = params['session_identifier'] 
+	#edf_file = params['edf_file'] 
 	el_tracker = pylink.getEYELINK()
 
 	if el_tracker.isConnected():
@@ -327,23 +327,23 @@ def terminate_task(win, genv, params):
 		el_tracker.setOfflineMode()
 
 		# Clear the Host PC screen and wait for 500 ms
-		el_tracker.sendCommand('clear_screen 0')
+		#el_tracker.sendCommand('clear_screen 0')
 		pylink.msecDelay(500)
 
 		# Close the edf data file on the Host
-		el_tracker.closeDataFile()
+		#el_tracker.closeDataFile()
 
 		# Show a file transfer message on the screen
-		msg = 'EDF data is transferring from EyeLink Host PC...'
-		show_msg(params, win, genv, msg, wait_for_keypress=False)
+		#msg = 'EDF data is transferring from EyeLink Host PC...'
+		#show_msg(params, win, genv, msg, wait_for_keypress=False)
 
 		# Download the EDF data file from the Host PC to a local data folder
 		# parameters: source_file_on_the_host, destination_file_on_local_drive
-		local_edf = os.path.join(session_folder, session_identifier + '.EDF')
-		try:
-			el_tracker.receiveDataFile(edf_file, local_edf)
-		except RuntimeError as error:
-			print('ERROR:', error)
+		#local_edf = os.path.join(session_folder, session_identifier + '.EDF')
+		#try:
+		#	el_tracker.receiveDataFile(edf_file, local_edf)
+		#except RuntimeError as error:
+		#	print('ERROR:', error)
 
 		# Close the link to the tracker.
 		el_tracker.close()

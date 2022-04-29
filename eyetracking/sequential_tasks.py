@@ -341,7 +341,7 @@ def collect_behavior(window, genv, el_tracker, params, trial_info, screen):
     return trial_info
 
 def match_screen_protocol(window, genv, el_tracker, params, trial_info): 
-
+    
     # setup--don't show yet--match screen in preparation for data collection  
     window, trial_info = setup_match_screen(window, params, trial_info) 
  
@@ -353,20 +353,141 @@ def match_screen_protocol(window, genv, el_tracker, params, trial_info):
    
     return trial_info 
 
+def concurrent_protocol(window, genv, el_tracker, params, trial_info): 
+   
+    print( 'oddity_screen_protoco: trial_Info', trial_info )  
+
+    # get all images in this experiment
+    images = np.random.permutation(os.listdir(params['image_directory']))
+    # determine what identity of trial image is
+    #trial_info['sample_identity'] = get_identity( trial_info['sample_image'] )
+    # determine what the viewpoint of the trial image is
+    #trial_info['sample_viewpoint'] = sample_view = get_viewpoint( trial_info['sample_image'] )
+
+    # find other images 
+    trial_oddity = trial_info['sample_image'] 
+    trial_screen = trial_oddity[:22] 
+    all_typicals = [i for i in os.listdir(params['image_directory']) if (trial_screen in i) * ('oddity' not in i) ]
+    trial_images = list( np.random.permutation(all_typicals)[:2]   ) 
+
+    oddity_location = np.random.randint(3)
+    trial_images.insert(oddity_location, trial_oddity)
+    
+    #sample_rotations = [i for i in images if (sample_identity in i) * (sample_view not in i) ]
+    # select a different rotation of the sample image
+    #match_image = np.random.permutation(sample_rotations)[0]
+
+    # generate a match identity that's different from the sample image
+    #foil = generate_differentmatch(params, trial_info)
+    # identify all images with this match identity that have a different viewpoint than the sample image
+    #foil_images = [i for i in images if (foil in i) * (sample_view not in i) * (get_viewpoint(match_image) not in i) ]
+    # select a single image of this different identity
+    #foil_image = np.random.permutation(foil_images)[0]
+    # create single dictionary with both possibilities
+    #same_different_options = {'same': match_image, 'different': foil_image}
+
+    #return same_different_options, trial_info
+
+
+    # determine whether the correct answer is going to be on the left or right
+    #trial_answer = ['left', 'right'] [ 1 * (np.random.random()>.5)]
+    # decide how much to shift each image by (here, i think .5 = half the distance from 0,0 to the edge
+    shiftx = params['screen_width']/5
+    shifty = params['screen_height']/5
+
+    # determine the path to the same and different images
+    #match_image_path = os.path.join(params['image_directory'], matches['same'])
+    #diff_image_path =  os.path.join(params['image_directory'], matches['different'])
+
+    image0 = os.path.join(params['image_directory'], trial_images[0])
+    image1 = os.path.join(params['image_directory'], trial_images[1])
+    image2 = os.path.join(params['image_directory'], trial_images[2])
+
+    stimulus0 = visual.ImageStim(window, image=image0, pos=(-shiftx, shifty))
+    stimulus1 = visual.ImageStim(window, image=image1, pos=(shiftx, shifty))
+    stimulus2 = visual.ImageStim(window, image=image2, pos=(0, -shifty))
+
+    verbose_name = visual.TextStim(window, trial_oddity, color=(1,1,1))
+    verbose_name.draw() 
+    
+    # position and same and different images on either the left or right of the screen
+    #match_stimulus = visual.ImageStim(window, image=match_image_path, pos=(shift[trial_answer=='right'], 0))
+    #diff_stimulus = visual.ImageStim(window, image=diff_image_path, pos=(shift[trial_answer!='right'], 0))
+
+    # project sample image on the back-screen
+    #match_stimulus.draw()
+    #diff_stimulus.draw()
+
+
+    stimulus0.draw() 
+    stimulus1.draw()
+    stimulus2.draw() 
+
+
+
+    # save infomation into trial data for later analysis
+    trial_info['keyboard_map'] = params['keyboard_map'] # {'1': 'left', '0': 'right'}
+#    trial_info['matchscreen_same'] = matches['same']
+    trial_info['answer'] = oddity_location # trial_answer
+#    trial_info['matchscreen_same_identity'] = get_identity(matches['same'] )
+#    trial_info['matchscreen_same_viewpoint'] = get_viewpoint(matches['same'])
+#    trial_info['matchscreen_different'] = matches['different']
+#    trial_info['matchscreen_different_identity'] = get_identity(matches['different'] )
+#    trial_info['matchscreen_different_viewpoint'] = get_viewpoint(matches['different'])
+
+
+
+
+    # randomly determine whether this will be a same or different trial (and save this value)
+#    trial_answer = 'same' # ['different', 'same'] [ 1 * (np.random.random() > params['proportion_same'])]
+    # select the image we've generated for this (either same or different) trial         
+#    match_screen_image = 'same' # matches[ trial_answer ]
+    # generate the path to this image 
+#    oddity_screen_path = os.path.join(params['image_directory'], trial_info['sample_image']) 
+    # define match image
+#    oddity_screen = visual.ImageStim(window, image=oddity_screen_path)
+    # project sample image on the back-screen 
+#    oddity_screen.draw()
+    # save information into trialdata for later analysis
+#    trial_info['keyboard_map'] = params['keyboard_map'] #{'0':'different', '1':'same'}
+#    trial_info['answer'] = trial_answer 
+#    trial_info['match_image'] = match_screen_image
+    #trial_info['match_identity'] = get_identity(match_screen_image) 
+    #trial_info['match_viewpoint'] = get_viewpoint(match_screen_image) 
+ 
+    # show the match screen which is prepped 
+    window.flip()
+   
+    # collect gaze and keyboard behavioral data
+    trial_info = collect_behavior(window, genv, el_tracker, params, trial_info, 'match')
+   
+    return trial_info 
+
+
 def run_single_trial(window, genv, sample_image, params): 
   
     # initialise trial info to save 
     trial_info  = {'sample_image': sample_image} 
     
-    # prep eyetracker for trial  
-    el_tracker = pre_trial_setup(window, genv, params)
+    if params['experiment_type'] == 'sequential':  
+        
+        # prep eyetracker for trial  
+        el_tracker = pre_trial_setup(window, genv, params)
 
-    # show sample screen and collect gaze data 
-    trial_info = sample_screen_protocol(window, genv, el_tracker, params, trial_info)
+        # show sample screen and collect gaze data 
+        trial_info = sample_screen_protocol(window, genv, el_tracker, params, trial_info)
+        
+        # collect responses on match screen 
+        trial_info = match_screen_protocol(window, genv, el_tracker, params, trial_info)   
     
-    # collect responses on match screen 
-    trial_info = match_screen_protocol(window, genv, el_tracker, params, trial_info)   
-    
+    elif params['experiment_type'] == 'concurrent': 
+        
+        # prep eyetracker for trial  
+        el_tracker = pre_trial_setup(window, genv, params)
+
+        # show sample screen and collect gaze data 
+        trial_info = concurrent_protocol(window, genv, el_tracker, params, trial_info)
+
     # migrate all the parameter information over to the trial data
     for i_param in params: trial_info[i_param] = params[i_param]
     
@@ -462,11 +583,18 @@ def generate_subject_id(path_to_data, subject_id=None):
 def image_order_protocol(params): 
     """determine the order that images will be presented in"""
     
-    if params['sample_image_protocol'] == 'shuffle': 
+    if params['stimulus_set'] == 'barense': 
+        files = [i for i in os.listdir(params['image_directory']) if 'oddity' in i]
+        images = np.random.permutation(files)
+        print( 'barense images', images ) 
+
+    
+    else: # params['sample_image_protocol'] == 'shuffle': 
         # for the moment, shuffle experimmental images
         files = [i for i in os.listdir(params['image_directory']) if 'view' in i]
         images = np.random.permutation(files)
-        
+    
+    
     return images
 
 def setup_eyelink_for_experiment(params): 
@@ -476,11 +604,11 @@ def setup_eyelink_for_experiment(params):
     if len(script_path) != 0:
         os.chdir(script_path)
 
-    params = eyelink_functions.setup_edf_file(params)
+    #params = eyelink_functions.setup_edf_file(params)
 
     el_tracker = eyelink_functions.connect_to_eyelink(params)
 	
-    params = eyelink_functions.open_edf_file(params, el_tracker) 
+    #params = eyelink_functions.open_edf_file(params, el_tracker) 
 	
     eyelink_functions.configure_tracker(el_tracker, params) 
 
@@ -536,6 +664,9 @@ def setup_camera_and_calibrate(win, el_tracker, params):
 if __name__ == '__main__': 
     
     params = {
+        # concurrent | sequential 
+        'experiment_type': 'concurrent', 
+        'stimulus_set': 'barense', 
         # how to generate sample images
         'sample_image_protocol': 'shuffle', 
         # how to generate the distractor
@@ -558,7 +689,7 @@ if __name__ == '__main__':
         # experiment type: 2|1 ('double'|'single') images on match screen
         'match_screen_type': 'double',
         # absolute path to images, which should be in this directory
-        'image_directory': os.path.join(os.getcwd(),'images'),  
+        #'image_directory': os.path.join(os.getcwd(),'../stimuli/barense_2007/'),  
         # backwards mask over image 
         'use_mask': True, 
         # time to mask in seconds 
@@ -574,15 +705,25 @@ if __name__ == '__main__':
         # time to wait when right
         'righttime':.5,
         # print out data from the terminal 
-		'verbose': True,
+		'verbose': False,
         # eyelink integration params
         'use_retina': False, 
         # decide whether we're actually running eyetracker 
         'dummy_mode': False,
-        'fixation_image_location':  os.path.join(os.getcwd(),'images'),  
+        'fixation_image_location':  os.path.join(os.getcwd(),'../stimuli/fixTarget.bmp'),  
 		}
-    
+   
+    if params['stimulus_set'] == 'barense': 
+        params['image_directory'] = os.path.join(os.getcwd(),'../stimuli/barense_2007/')
 
+    if params['experiment_type'] == 'concurrent': 
+        params['keyboard_map'] = {'left': 0, 'right': 1, 'down': 2}
+    elif params['experiment_type'] == 'sequential':
+        params['keyboard_map'] = {'1': 'left', '0': 'right'}
+        
+         
+    print('params', params) 
+    
     # generate a subject id we can use to save data from this experiment
     subject_id = generate_subject_id(os.getcwd()) 
    
@@ -596,7 +737,7 @@ if __name__ == '__main__':
     experiment_data = pandas.DataFrame({}) 
     
     # iterate across all images/objects
-    for i_image in images[:2]: 
+    for i_image in images[:10]: 
  
         # create single trial, evaluate performance, return trial data 
         trial_data = run_single_trial(experiment_window, genv, i_image, params)
